@@ -1,0 +1,9 @@
+<map id="souffle::RamCreate::print" name="souffle::RamCreate::print">
+<area shape="rect" id="node2" href="$classsouffle_1_1_ram_relation_reference.html#af7b53707facc6f0770ca1399c8ca3d75" title="Get argument. " alt="" coords="189,5,395,46"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_ram_relation_reference.html#a310c7cb619fe9fb63e1e7a8c49886548" title="Get arity. " alt="" coords="189,70,395,111"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ram_relation_reference.html#a5390236c4ae1be863073a7e71335a631" title="Get name. " alt="" coords="189,135,395,177"/>
+<area shape="rect" id="node8" href="$classsouffle_1_1_ram_relation_statement.html#a90bced58bf8a164af5da32e51c9e47c7" title="Get RAM relation. " alt="" coords="189,201,395,242"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ram_relation.html#acd6760acf6b69232fe1c138428ef803a" title="Get argument. " alt="" coords="443,5,589,46"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ram_relation.html#a4b8c28fa5818f930e0d3149cd4a50b8b" title="souffle::RamRelation\l::getArity" alt="" coords="443,70,589,111"/>
+<area shape="rect" id="node7" href="$classsouffle_1_1_ram_relation.html#aff204de1a828d72e6e74337be4885ddd" title="Get name. " alt="" coords="443,135,589,177"/>
+</map>

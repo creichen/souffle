@@ -1,0 +1,7 @@
+<map id="souffle::IndexSet" name="souffle::IndexSet">
+<area shape="rect" id="node3" href="$classsouffle_1_1_ram_relation_reference.html" title="A RAM Relation in the RAM intermediate representation. " alt="" coords="463,798,668,1037"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_ram_node.html" title="RamNode is a superclass for all RAM IR classes. " alt="" coords="579,147,707,357"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ram_relation.html" title="A RAM Relation in the RAM intermediate representation. " alt="" coords="372,494,529,733"/>
+<area shape="rect" id="node8" href="$classsouffle_1_1_symbol_mask.html" title="{souffle::SymbolMask\n||+ getArity()\l+ isSymbol()\l+ operator!=()\l+ operator==()\l+ print()\l+ setSymbol()\l+ SymbolMask()\l+ SymbolMask()\l}" alt="" coords="169,162,313,342"/>
+<area shape="rect" id="node15" href="$classsouffle_1_1_max_matching.html" title="Computes a maximum matching with Hopcroft&#45;Karp algorithm Source: http://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm#Pseudocode. " alt="" coords="1061,835,1208,1000"/>
+</map>

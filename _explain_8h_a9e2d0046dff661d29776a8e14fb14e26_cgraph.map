@@ -1,0 +1,12 @@
+<map id="explain" name="explain">
+<area shape="rect" id="node2" href="$classsouffle_1_1_explain_provenance.html#a340ed47f995b5172ab9f346babc4bfd7" title="souffle::ExplainProvenance\l::explain" alt="" coords="119,5,300,46"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_explain_provenance.html#a64e3165acb1b13e24e5f1974d8c29cf2" title="souffle::ExplainProvenance\l::explainSubproof" alt="" coords="119,70,300,111"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_explain_provenance.html#aadcec6224703d8b59f7743ce97bf7f03" title="souffle::ExplainProvenance\l::getRule" alt="" coords="119,135,300,177"/>
+<area shape="rect" id="node5" href="$_explain_8h.html#a91b55742cd5650bd72057f693862f0b4" title="initialiseWindow" alt="" coords="151,201,267,228"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_explain_provenance.html#af1571b104107b98bf2a2d73b984709f1" title="souffle::ExplainProvenance\l::measureRelation" alt="" coords="119,253,300,294"/>
+<area shape="rect" id="node7" href="$classsouffle_1_1_explain.html#ab7363e371d6ed14e5e2fb1b8b76eae28" title="souffle::Explain::parseTuple" alt="" coords="117,319,301,345"/>
+<area shape="rect" id="node8" href="$_explain_8h.html#a74a24f8c96392ed2bc617f9c8fb617cf" title="printStr" alt="" coords="177,369,241,396"/>
+<area shape="rect" id="node9" href="$_explain_8h.html#a99a47b234de7283e63a83b5358fede8c" title="scrollTree" alt="" coords="170,420,249,447"/>
+<area shape="rect" id="node10" href="$namespacesouffle.html#a2925d5d1ec64b003a6b111ed29a2392b" title="utility function to split a string " alt="" coords="163,471,256,497"/>
+<area shape="rect" id="node11" href="$namespacesouffle.html#a0fff2be077dd5d1105f3a6e718339f2f" title="A utility printing a given value multiple times. " alt="" coords="349,471,451,497"/>
+</map>

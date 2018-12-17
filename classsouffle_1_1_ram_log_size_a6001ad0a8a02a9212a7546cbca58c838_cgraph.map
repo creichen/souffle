@@ -1,0 +1,6 @@
+<map id="souffle::RamLogSize::equal" name="souffle::RamLogSize::equal">
+<area shape="rect" id="node2" href="$classsouffle_1_1_ram_relation_statement.html#ae20c6bb019e4947e36a6c35a0766cbc8" title="Check equality. " alt="" coords="197,37,403,78"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ram_log_size.html#a61429b1b930a631bff379870471d0892" title="Get logging message. " alt="" coords="228,102,372,143"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ram_relation_statement.html#a90bced58bf8a164af5da32e51c9e47c7" title="Get RAM relation. " alt="" coords="451,5,656,46"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_ram_relation_reference.html#aba4241170a1ec60793af1fe68b7fb657" title="Get relation. " alt="" coords="451,70,656,111"/>
+</map>

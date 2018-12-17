@@ -1,0 +1,4 @@
+<map id="souffle::WriteCoutCSV" name="souffle::WriteCoutCSV">
+<area shape="rect" id="node2" href="$classsouffle_1_1_write_stream_c_s_v.html" title="{souffle::WriteStreamCSV\n||# getDelimiter()\l}" alt="" coords="5,72,176,149"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_write_stream.html" title="{souffle::WriteStream\n|# arity\l# isProvenance\l# symbolMask\l# symbolTable\l|+ writeAll()\l+ writeNext()\l+ WriteStream()\l+ ~WriteStream()\l# writeNext()\l# writeNextTuple()\l# writeNullary()\l}" alt="" coords="201,6,343,215"/>
+</map>

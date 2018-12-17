@@ -1,0 +1,11 @@
+<map id="souffle::SynthesiserRelation::getSynthesiserRelation" name="souffle::SynthesiserRelation::getSynthesiserRelation">
+<area shape="rect" id="node2" href="$classsouffle_1_1_synthesiser_relation.html#a233b38166660798003f936c02e91a6a4" title="Compute the final list of indices to be used. " alt="" coords="249,5,436,46"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ram_relation_reference.html#a310c7cb619fe9fb63e1e7a8c49886548" title="Get arity. " alt="" coords="240,70,445,111"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ram_relation_reference.html#a1c5a17035be89ec7dc3d8c8fcb784f7e" title="Is Brie relation. " alt="" coords="240,135,445,177"/>
+<area shape="rect" id="node7" href="$classsouffle_1_1_ram_relation_reference.html#a60f6ef7820fc7cb6264a2793e6d6a333" title="souffle::RamRelationReference\l::isBTree" alt="" coords="240,201,445,242"/>
+<area shape="rect" id="node9" href="$classsouffle_1_1_ram_relation_reference.html#a6356776045ea34eefc3fba746fac2b13" title="Is equivalence relation. " alt="" coords="240,266,445,307"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_ram_relation.html#a4b8c28fa5818f930e0d3149cd4a50b8b" title="souffle::RamRelation\l::getArity" alt="" coords="494,70,639,111"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ram_relation.html#a988392c3b0724b683628ebbc67dbb021" title="Is Brie relation. " alt="" coords="494,135,639,177"/>
+<area shape="rect" id="node8" href="$classsouffle_1_1_ram_relation.html#a1bdfc06fa5530a59b8d6739039fe4a41" title="Is BTree relation. " alt="" coords="494,201,639,242"/>
+<area shape="rect" id="node10" href="$classsouffle_1_1_ram_relation.html#ac3af25b1af330f5dac4e2e8ab28647a4" title="Is equivalence relation. " alt="" coords="494,266,639,307"/>
+</map>

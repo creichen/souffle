@@ -1,0 +1,9 @@
+<map id="souffle::LambdaBTreeSet::operator=" name="souffle::LambdaBTreeSet::operator=">
+<area shape="rect" id="node2" href="$classsouffle_1_1detail_1_1_lambda_b_tree.html#a71a927249ad58d0de360f2afd91cdf54" title="souffle::detail::LambdaBTree\l\&lt; Key, Comparator, Allocator,\l blockSize, SearchStrategy,\l true, Functor \&gt;::operator=" alt="" coords="225,79,421,150"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1detail_1_1btree.html#a935b9f6b911b47f9ec20702705fd056a" title="souffle::detail::btree\l::empty" alt="" coords="470,5,607,46"/>
+<area shape="rect" id="node4" href="$structsouffle_1_1detail_1_1btree_1_1node.html#ae4ee9d8120f6d7d0c536b9d276614146" title="A deep&#45;copy operation creating a clone of this node. " alt="" coords="470,94,607,135"/>
+<area shape="rect" id="node7" href="$structsouffle_1_1detail_1_1btree_1_1node.html#a014063a5026af18753d13766ba71179d" title="Obtains a reference to the child of the given index. " alt="" coords="657,157,794,198"/>
+<area shape="rect" id="node5" href="$structsouffle_1_1detail_1_1btree_1_1base.html#a94dea77bc474eccc97f4fdd6c52c7307" title="souffle::detail::btree\l::base::isInner" alt="" coords="657,26,794,67"/>
+<area shape="rect" id="node6" href="$structsouffle_1_1detail_1_1btree_1_1base.html#a164894fc875769ca72f9eefb6a3f085a" title="souffle::detail::btree\l::base::isLeaf" alt="" coords="657,91,794,133"/>
+<area shape="rect" id="node8" href="$structsouffle_1_1detail_1_1btree_1_1node.html#a8076ed534c629b7d1984e11b81dab6ce" title="A utility function providing a reference to this node as an inner node. " alt="" coords="843,157,983,198"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="souffle::profile::Reader::processFile" name="souffle::profile::Reader::processFile">
+<area shape="rect" id="node2" href="$classsouffle_1_1profile_1_1_reader.html#ae8c8d5bdca4424587a134a0739d91b5f" title="souffle::profile::Reader\l::addRelation" alt="" coords="239,70,393,111"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1profile_1_1_reader.html#a721366eab5b1101f0068a4d5df796192" title="souffle::profile::Reader\l::extractRelationNameFromAtom" alt="" coords="209,5,423,46"/>
+<area shape="rect" id="node6" href="$namespacesouffle.html#a1c65551944c7ecf6f44ec851b49bdbb0" title="souffle::now" alt="" coords="269,136,363,163"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1profile_1_1_reader.html#abab57986e7de0e43a15dc4dc5583be06" title="souffle::profile::Reader\l::cleanRelationName" alt="" coords="472,5,627,46"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1profile_1_1_reader.html#a80667c17e45fe8dd228a6f6388b169dc" title="souffle::profile::Reader\l::createId" alt="" coords="472,70,627,111"/>
+</map>

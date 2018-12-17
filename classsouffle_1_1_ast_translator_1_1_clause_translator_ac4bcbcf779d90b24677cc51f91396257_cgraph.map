@@ -1,0 +1,11 @@
+<map id="souffle::AstTranslator::ClauseTranslator::createValueIndex" name="souffle::AstTranslator::ClauseTranslator::createValueIndex">
+<area shape="rect" id="node2" href="$namespacesouffle.html#a34f8eecb81c090fca9e58d3357b63ed9" title="A generic test checking whether any elements within a container satisfy a certain predicate..." alt="" coords="345,5,453,32"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ast_atom.html#a11c5d1489f18c4981e9f4956fa2155de" title="Return the i&#45;th argument of the atom. " alt="" coords="297,56,500,83"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_ast_atom.html#a11ba399d723b5f1135a35e47e51e1bad" title="Provides access to the list of arguments of this atom. " alt="" coords="294,107,503,133"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ast_clause.html#a349d1209cf619aaf6250c91e2cb0041d" title="Obtains a list of contained body&#45;atoms. " alt="" coords="333,158,464,199"/>
+<area shape="rect" id="node7" href="$classsouffle_1_1_ast_aggregator.html#a4deb6a8ea2b7d2ef7cd42c9ca668f8a1" title="souffle::AstAggregator\l::getBodyLiterals" alt="" coords="323,223,475,265"/>
+<area shape="rect" id="node8" href="$namespacesouffle.html#ad9bb9099f19c9e5dcf89e3822728496c" title="A utility function visiting all nodes within the ast rooted by the given node recursively in a depth&#45;..." alt="" coords="321,289,476,330"/>
+<area shape="rect" id="node5" href="$namespacesouffle.html#ad62d4e824a9d74c7462da546a21780fe" title="A utility function enabling the creation of a vector of pointers. " alt="" coords="562,165,697,192"/>
+<area shape="rect" id="node9" href="$classsouffle_1_1_ast_node.html#a3726392849b2a07142ba13bbd5fb16d2" title="Obtain a list of all embedded AST child nodes. " alt="" coords="755,289,931,330"/>
+<area shape="rect" id="node10" href="$namespacesouffle.html#ae3213abfc9e18e34bb08056ec91f7b86" title="A utility function visiting all nodes within the ast rooted by the given node recursively in a depth&#45;..." alt="" coords="552,318,707,359"/>
+</map>

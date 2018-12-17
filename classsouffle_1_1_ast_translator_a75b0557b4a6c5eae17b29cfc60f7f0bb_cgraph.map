@@ -1,0 +1,11 @@
+<map id="souffle::AstTranslator::translateNewRelation" name="souffle::AstTranslator::translateNewRelation">
+<area shape="rect" id="node2" href="$classsouffle_1_1_ast_translator.html#a7fc17898aec971a6853cb2c14ac61046" title="a utility to translate atoms to relations " alt="" coords="208,107,355,149"/>
+<area shape="rect" id="node3" href="$namespacesouffle.html#ab18cbb3adc2ab328de0db30a3fddf7e0" title="Returns the relation referenced by the given atom. " alt="" coords="407,56,574,83"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_ast_atom.html#adfaa949dc3e89fa2dc25981963ea5752" title="Return the name of this atom. " alt="" coords="627,5,808,32"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ast_translator.html#adb011e0871610d8efd5e8e47fd64357a" title="create a reference to a RAM relation " alt="" coords="403,107,578,149"/>
+<area shape="rect" id="node7" href="$classsouffle_1_1_ast_translator.html#a166b124d41a927432b4a3bced0cd1428" title="converts the given relation identifier into a relation name " alt="" coords="417,173,564,214"/>
+<area shape="rect" id="node10" href="$classsouffle_1_1_ast_atom.html#aad70ba585b02eac7a0038f8cdcee2c18" title="Return the arity of the atom. " alt="" coords="404,239,577,265"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ast_program.html#ae4e787ea4d338524ea6b346d5dedc290" title="Find and return the relation in the program given its name. " alt="" coords="648,57,787,98"/>
+<area shape="rect" id="node8" href="$namespacesouffle.html#abe4e3f19879707216a2758b03f4e2deb" title="Creates an object to be forwarded to some output stream for printing sequences of elements interspers..." alt="" coords="673,155,762,181"/>
+<area shape="rect" id="node9" href="$namespacesouffle.html#aecc08c83ad9634fc515b7aa094702949" title="A generic function converting strings into strings (trivial case). " alt="" coords="660,205,775,232"/>
+</map>
