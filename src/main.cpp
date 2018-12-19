@@ -207,6 +207,7 @@ int main(int argc, char** argv) {
                                     "execution engine."},
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"version", '\2', "", "", false, "Version."},
+                            {"dump-ram", 'R', "FILE", "", false, "Dump the RAM."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
                 }());
@@ -509,6 +510,7 @@ int main(int argc, char** argv) {
             exit(1);
         }
     }
+
     if (ramTranslationUnit->getErrorReport().getNumIssues() != 0) {
         std::cerr << ramTranslationUnit->getErrorReport();
     }
@@ -516,6 +518,12 @@ int main(int argc, char** argv) {
     if (!ramTranslationUnit->getProgram()->getMain()) {
         return 0;
     };
+
+    if (Global::config().has("dump-ram")) {
+      std::ofstream fout(Global::config().get("dump-ram"));
+      fout << *ramTranslationUnit->getProgram();
+      fout.close();
+    }
 
     if (!Global::config().has("compile") && !Global::config().has("dl-program") &&
             !Global::config().has("generate")) {
