@@ -96,6 +96,7 @@ souffle_sources = \
               IOSystem.h                                \
               IndexSetAnalysis.cpp   IndexSetAnalysis.h \
               InlineRelationsTransformer.cpp            \
+              InsertFuncChecks.cpp                      \
               Interpreter.cpp       Interpreter.h       \
               InterpreterContext.h                      \
               InterpreterIndex.h                        \
@@ -269,7 +270,7 @@ test_btree_multiset_test_LDADD = libsouffle.la
 check_PROGRAMS += test/binary_relation_test
 test_binary_relation_test_CXXFLAGS = $(souffle_CPPFLAGS) -I @abs_top_srcdir@/src/test
 test_binary_relation_test_SOURCES = test/binary_relation_test.cpp
-test_binary_relation_test_LDADD = libsouffle.la 
+test_binary_relation_test_LDADD = libsouffle.la
 
 # pnappa's good ol fashioned data structure tests (auxilliary structures to binrel, and potentially useful outside)
 check_PROGRAMS += test/eqrel_datastructure_test

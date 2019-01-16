@@ -333,6 +333,20 @@ public:
 };
 
 /**
+ * Insert new predicates to check whether the existing ones can be decomposed to
+ * to functions
+ */
+ class InsertFuncChecksTransformer : public AstTransformer {
+ private:
+   bool transform(AstTranslationUnit &translationUnit) override;
+ public:
+   std::string getName() const override {
+     return "InsertFuncChecksTransformer";
+   }
+ };
+
+
+/**
  * Transformer that holds an arbitrary number of sub-transformations
  */
 class PipelineTransformer : public MetaTransformer {
