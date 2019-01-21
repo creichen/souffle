@@ -64,7 +64,7 @@ public:
         if (printSize) {
             os << ".printsize ";
         }
-        os << getNames() << "(";
+        os << getName() << "(";
         bool first = true;
         for (auto& pair : kvps) {
             if (first) {
@@ -72,7 +72,7 @@ public:
             } else {
                 os << ',';
             }
-            os << pair.first << "=\"" << pair.second << "\"";
+            os << pair.first << "=\"" << escape(pair.second) << "\"";
         }
         os << ')';
     }
@@ -139,6 +139,12 @@ protected:
         unescaped = unescape(unescaped, "\\r", "\r");
         unescaped = unescape(unescaped, "\\n", "\n");
         return unescaped;
+    }
+
+    std::string escape(const std::string& inputString) const {
+      std::string escaped = unescape(inputString, "\"", "\\\"");
+      escaped = unescape(escaped, "\t", "\\t");
+      return escaped;
     }
 
     std::string unescape(

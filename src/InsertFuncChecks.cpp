@@ -5,6 +5,7 @@
 #include <numeric>
 #include <map>
 #include <set>
+#include <fstream>
 
 using namespace souffle;
 
@@ -239,20 +240,55 @@ std::vector<std::unique_ptr<AstRelation>> generateFuncTestPredicates(const AstRe
 }
 
 bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit) {
-  if (!Global::config().has("func-checks"))
+  if (!Global::config().has("func-check"))
     return false;
 
+  auto &dir = Global::config().get("output-dir");
 
   auto &prog = *translationUnit.getProgram();
+  std::vector<std::unique_ptr<AstRelation>> newRelations;
+
   for (auto *r : prog.getRelations()) {
     if (!r->isInput())
       continue;
     auto funcTestRels = generateFuncTestPredicates(*r);
 
-    for (auto &rel : funcTestRels) {
-      prog.appendRelation(std::move(rel));
+    // newRelations.insert(newRelations.end(),
+    //                     std::make_move_iterator(funcTestRels.begin()),
+    //                     std::make_move_iterator(funcTestRels.end()));
+
+
+    // SymbolTable symbolTable;
+    // ErrorReport errorReport;
+    // DebugReport debugReport;
+    // auto newTU = std::make_unique<AstTranslationUnit>(
+    //   std::unique_ptr<AstProgram>(new AstProgram()), symbolTable, errorReport, debugReport);
+
+    auto newProg = std::unique_ptr<AstProgram>(new AstProgram());
+
+    // add the types that are required
+    for (const auto *t : prog.getTypes()) {
+      newProg->addType(std::unique_ptr<AstType>(t->clone()));
     }
+
+    // add the original relation
+    newProg->appendRelation(std::unique_ptr<AstRelation>(r->clone()));
+    // append all the generated relations
+    for (auto &newRel : funcTestRels)
+      newProg->appendRelation(std::move(newRel));
+
+    std::string outFileName = dir + "/nf_" + r->getName().getName() + ".dl";
+    std::ofstream outFile(outFileName);
+    newProg->print(outFile);
+
+    std::cout << "Generated " << outFileName << " with " << funcTestRels.size() << " function test relations\n";
   }
+
+  // for (auto &rel : newRelations) {
+  //   prog.appendRelation(std::move(rel));
+  // }
+
+  std::cout << "\nGenerated " << newRelations.size() << " function test relations\n";
 
   return false;
 }
@@ -296,5 +332,7 @@ struct SelfTest {
 };
 
 #ifndef NDEBUG
+#if 0
 SelfTest t;
+#endif
 #endif
