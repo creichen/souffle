@@ -207,6 +207,8 @@ int main(int argc, char** argv) {
                                     "execution engine."},
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"version", '\2', "", "", false, "Version."},
+                            {"debug", 'd', "", "", false, "Debug printout."},
+                            {"func-checks", 'f', "", "", false, "Generate function checks."},
                             {"dump-ram", 'R', "FILE", "", false, "Dump the RAM."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
@@ -443,6 +445,7 @@ int main(int argc, char** argv) {
 
     // Main pipeline
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
+            std::make_unique<InsertFuncChecksTransformer>(),
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(), std::make_unique<AstSemanticChecker>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
@@ -460,7 +463,6 @@ int main(int argc, char** argv) {
             std::make_unique<MinimiseProgramTransformer>(),
             std::make_unique<RemoveRelationCopiesTransformer>(),
             std::make_unique<ReorderLiteralsTransformer>(),
-                                                          std::make_unique<InsertFuncChecksTransformer>(),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<ReorderLiteralsTransformer>(), std::move(magicPipeline),
