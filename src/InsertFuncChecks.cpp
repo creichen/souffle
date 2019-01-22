@@ -18,11 +18,6 @@ using namespace souffle;
 #endif
 
 
-/** TODO:
-    - add rules from functions with more arguments to functions with a subset of arguments
-    -
- */
-
 /** Helper class to generate subsets of k of elements
     out of sets of n elements */
 template<class I>
@@ -109,16 +104,18 @@ static std::string generateRelName(const std::string &predName, const std::set<u
   return res;
 }
 
+using FunctionalRelationDesc = std::pair<std::set<unsigned>, unsigned>;
+
 /** for every relation, generate other relations to test for functional relations
     between its columns */
-std::vector<std::unique_ptr<AstRelation>> generateFuncTestPredicates(const AstRelation &R) {
+std::map<FunctionalRelationDesc, std::unique_ptr<AstRelation>> generateFuncTestPredicates(const AstRelation &R) {
   auto rName = R.getName().getName();
   auto nArgs = R.getArity();
 
   std::vector<unsigned> indices(nArgs);
   std::iota(indices.begin(), indices.end(), 0);
 
-  std::map<std::pair<std::set<unsigned>, unsigned>, std::unique_ptr<AstRelation>> clauses;
+  std::map<FunctionalRelationDesc, std::unique_ptr<AstRelation>> clauses;
 
   for (unsigned n = nArgs - 1; n > 0; --n) {
     auto choice = choose<decltype(indices)::iterator>(indices.begin(), indices.end(), n);
@@ -229,15 +226,57 @@ std::vector<std::unique_ptr<AstRelation>> generateFuncTestPredicates(const AstRe
     } while(argSubsetGen.next());
   }
 
-  // now move all the relations from a map to a vector
-  std::vector<std::unique_ptr<AstRelation>> rRelations;
-  std::transform(clauses.begin(), clauses.end(), std::back_inserter(rRelations),
-                 [](decltype(clauses)::value_type &entry) {
-                   return std::move(entry.second);
-                 });
-
-  return rRelations;
+  return clauses;
 }
+
+/** Helper functions to iterate over all the elements in a tuple. Useless.
+ */
+template<unsigned i, typename Func, typename... Args>
+struct tuple_internal {
+private:
+  static void apply(const std::tuple<Args...> &tpl, Func &f) {
+    f.operator()(std::get<i>(tpl));
+    tuple_internal<i + 1, Func, Args...>::apply(tpl, f);
+  }
+public:
+  static void for_each(const std::tuple<Args...> &tpl, Func &f) {
+    tuple_internal<sizeof...(Args), Func, Args...>::apply(tpl, f);
+  }
+};
+
+template<typename Func, typename... Args>
+struct tuple_internal<0, Func, Args...> {
+private:
+  static void apply(const std::tuple<Args...> &, Func &&f) {}
+};
+
+template<typename Func, typename... Args>
+void tuple_for_each(const std::tuple<Args...> &tpl,  Func &f) {
+  tuple_internal<sizeof...(Args), Func, Args...>::for_each(tpl, f);
+}
+
+template<typename...Args>
+void writeOutSimpleCSV(const std::string &fileName, std::vector<std::tuple<Args...>> &vals) {
+  std::ofstream outFile(fileName);
+  struct {
+    std::ofstream &outFile;
+    void operator()(unsigned i) {
+      outFile << i << '\t';
+    }
+    void operator()(const std::string &s) {
+      outFile << s << '\t';
+    }
+  } printer{outFile};
+
+  for (auto &entry : vals) {
+    tuple_for_each(entry, printer);
+    std::cout << '\n';
+  }
+}
+
+/* End of useless */
+
+
 
 bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit) {
   if (!Global::config().has("func-check"))
@@ -247,6 +286,9 @@ bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit)
 
   auto &prog = *translationUnit.getProgram();
   std::vector<std::unique_ptr<AstRelation>> newRelations;
+
+
+  std::ofstream relMapFile(dir + "/RelMap.csv");
 
   for (auto *r : prog.getRelations()) {
     if (!r->isInput())
@@ -273,15 +315,32 @@ bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit)
 
     // add the original relation
     newProg->appendRelation(std::unique_ptr<AstRelation>(r->clone()));
-    // append all the generated relations
-    for (auto &newRel : funcTestRels)
-      newProg->appendRelation(std::move(newRel));
-
     std::string outFileName = dir + "/nf_" + r->getName().getName() + ".dl";
+
+    // append all the generated relations and log the mappings to a file
+    for (auto &newRel : funcTestRels) {
+      relMapFile << r->getName().getName() << "\t";
+      relMapFile << generateRelName(r->getName().getName(), newRel.first.first, newRel.first.second) << "\t";
+      for (unsigned i = 0; i < r->getArity(); ++i) {
+        relMapFile << "\t";
+        if (newRel.first.first.count(i))
+          relMapFile << "S";
+        else if (newRel.first.second == i)
+          relMapFile << "T";
+        else
+          relMapFile << "X";
+      }
+      relMapFile << "\n";
+
+      newProg->appendRelation(std::move(newRel.second));
+    }
+
+
     std::ofstream outFile(outFileName);
     newProg->print(outFile);
 
     std::cout << "Generated " << outFileName << " with " << funcTestRels.size() << " function test relations\n";
+
   }
 
   // for (auto &rel : newRelations) {
