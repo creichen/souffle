@@ -345,6 +345,14 @@ public:
    }
  };
 
+ class ReorderFuncLiteralsTransformer : public AstTransformer {
+ private:
+   bool transform(AstTranslationUnit &translationUnit) override;
+ public:
+   std::string getName() const override {
+     return "ReorderFuncLiteralsTransformer";
+   }
+ };
 
 /**
  * Transformer that holds an arbitrary number of sub-transformations

@@ -97,6 +97,8 @@ souffle_sources = \
               IndexSetAnalysis.cpp   IndexSetAnalysis.h \
               InlineRelationsTransformer.cpp            \
               InsertFuncChecks.cpp                      \
+              FuncChecksCommon.h                        \
+              ReorderFuncLiterals.cpp                   \
               Interpreter.cpp       Interpreter.h       \
               InterpreterContext.h                      \
               InterpreterIndex.h                        \

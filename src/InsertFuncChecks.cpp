@@ -6,17 +6,9 @@
 #include <map>
 #include <set>
 #include <fstream>
+#include "FuncChecksCommon.h"
 
 using namespace souffle;
-
-#ifndef NDEBUG
-#define DEBUG(X) do { \
-  if (Global::config().has("debug")) { X; } \
-  } while (0)
-#else
-#define DEBUG(X)
-#endif
-
 
 /** Helper class to generate subsets of k of elements
     out of sets of n elements */
@@ -104,7 +96,6 @@ static std::string generateRelName(const std::string &predName, const std::set<u
   return res;
 }
 
-using FunctionalRelationDesc = std::pair<std::set<unsigned>, unsigned>;
 
 /** for every relation, generate other relations to test for functional relations
     between its columns */

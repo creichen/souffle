@@ -209,6 +209,7 @@ int main(int argc, char** argv) {
                             {"version", '\2', "", "", false, "Version."},
                             {"debug", 'd', "", "", false, "Debug printout."},
                             {"func-check", 'f', "", "", false, "Generate function checks."},
+                            {"func-opt", 'O', "FILE", "", false, "Optimize functional relations."},
                             {"dump-ram", 'R', "FILE", "", false, "Dump the RAM."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
@@ -472,8 +473,11 @@ int main(int argc, char** argv) {
             std::make_unique<ReorderLiteralsTransformer>(),
             std::make_unique<MaterializeAggregationQueriesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),
-            std::make_unique<ReorderLiteralsTransformer>(), std::move(magicPipeline),
-            std::make_unique<AstExecutionPlanChecker>(), std::move(provenancePipeline));
+            std::make_unique<ReorderLiteralsTransformer>(),
+                                                          std::make_unique<ReorderFuncLiteralsTransformer>(),
+                                                          std::move(magicPipeline),
+            std::make_unique<AstExecutionPlanChecker>(),
+                                                          std::move(provenancePipeline));
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {
