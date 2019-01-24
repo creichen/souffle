@@ -311,7 +311,7 @@ bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit)
     // append all the generated relations and log the mappings to a file
     for (auto &newRel : funcTestRels) {
       relMapFile << r->getName().getName() << "\t";
-      relMapFile << generateRelName(r->getName().getName(), newRel.first.first, newRel.first.second) << "\t";
+      relMapFile << generateRelName(r->getName().getName(), newRel.first.first, newRel.first.second);
       for (unsigned i = 0; i < r->getArity(); ++i) {
         relMapFile << "\t";
         if (newRel.first.first.count(i))
