@@ -80,38 +80,43 @@ bool FuncLiteralOpt::handleClause(AstClause &cls) {
     }
   }
 
-  static unsigned print_count = 0;
+  // Write out the graph
+  DEBUG(
+    static unsigned print_count = 0;
 
-  struct {
-    Graph &g;
+    struct {
+      Graph &g;
 
-    std::string sanitize(const std::string &s) {
-      return boost::algorithm::replace_all_copy(s, "?", "_");
+      std::string sanitize(const std::string &s) {
+        return boost::algorithm::replace_all_copy(s, "?", "_");
+      }
+
+      void operator()(std::ostream &os, Graph::edge_descriptor e) {
+        auto pmap = boost::get(boost::edge_name_t(), g);
+        os << "[label=" << sanitize(pmap[e]) << "]";
+      }
+    } wpe{g};
+
+    struct {
+      Graph &g;
+      std::string sanitize(const std::string &s) {
+        return boost::algorithm::replace_all_copy(s, "?", "_");
+      }
+
+      void operator()(std::ostream &os, Graph::vertex_descriptor v) {
+        os << " [label=" << sanitize(g[v]) << "]" ;
+      }
+    } wpv{g};
+
+
+    if (g.num_vertices() > 2) {
+      auto gFile = std::ofstream(cls.getHead()->getName().getName() + "_" + std::to_string(print_count++) + ".gv");
+      gFile << "/*\n";
+      cls.print(gFile);
+      gFile << "\n*/\n";
+      boost::write_graphviz(gFile, g, wpv, wpe);
     }
-
-    void operator()(std::ostream &os, Graph::edge_descriptor e) {
-      auto pmap = boost::get(boost::edge_name_t(), g);
-      os << "[label=" << sanitize(pmap[e]) << "]";
-    }
-  } wpe{g};
-
-  struct {
-    Graph &g;
-    std::string sanitize(const std::string &s) {
-      return boost::algorithm::replace_all_copy(s, "?", "_");
-    }
-
-    void operator()(std::ostream &os, Graph::vertex_descriptor v) {
-      os << " [label=" << sanitize(g[v]) << "]" ;
-    }
-  } wpv{g};
-
-
-  if (g.num_vertices() > 2) {
-    auto gFile = std::ofstream(cls.getHead()->getName().getName() + "_" + std::to_string(print_count++) + ".gv");
-    boost::write_graphviz(gFile, g, wpv, wpe);
-  }
-
+    );
   return false;
 }
 
