@@ -6,6 +6,7 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/directed_graph.hpp>
+#include <boost/graph/undirected_graph.hpp>
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 
@@ -17,6 +18,10 @@ using Graph = boost::directed_graph<
   std::string,
   EdgeNameT>;
 
+using Graph2 = boost::undirected_graph<
+  AstLiteral*,
+  EdgeNameT>;
+
 class FuncLiteralOpt {
   AstTranslationUnit &tu;
   std::multimap<std::string, FunctionalRelationDesc> funcRels;
@@ -26,9 +31,11 @@ public:
     : tu(tu), funcRels(std::move(funcRels)) {}
 
   bool handleClause(AstClause &cls);
+  bool handleClause2(AstClause &cls);
   bool handleRelation(AstRelation &rel) {
     for (auto *cls : rel.getClauses()) {
       handleClause(*cls);
+      handleClause2(*cls);
     }
     return false;
   }
@@ -39,7 +46,138 @@ public:
   }
 };
 
+static void collectVariableNames(const AstArgument *arg, std::set<std::string> &vars) {
+  if (auto *var = dynamic_cast<const AstVariable*>(arg)) {
+    vars.insert(var->getName());
+  } else {
+    for (auto *child : arg->getChildNodes()) {
+      if (auto *a = dynamic_cast<const AstArgument*>(child))
+        collectVariableNames(a, vars);
+    }
+  }
+}
 
+
+bool FuncLiteralOpt::handleClause2(AstClause &cls) {
+  Graph2 g;
+
+  std::map<AstLiteral*, std::set<std::string>> argMap;
+  std::map<AstLiteral*, Graph::vertex_descriptor> literalToVertex;
+
+  auto getVertex = [&g, &literalToVertex] (AstLiteral *l) -> Graph2::vertex_descriptor {
+    auto it = literalToVertex.find(l);
+    if (it == literalToVertex.end()) {
+      auto v = boost::add_vertex(l, g);
+      std::tie(it, std::ignore) = literalToVertex.insert(std::make_pair(l, v));
+    }
+    return it->second;
+  };
+
+  for (auto *literal : cls.getBodyLiterals()) {
+    std::set<std::string> args;
+    if (AstAtom *atom = dynamic_cast<AstAtom*>(literal)) {
+      for (auto *arg : atom->getArguments()) {
+        collectVariableNames(arg, args);
+      }
+    } else if (AstBinaryConstraint *constr =
+               dynamic_cast<AstBinaryConstraint*>(literal)) {
+      collectVariableNames(constr->getLHS(), args);
+      collectVariableNames(constr->getRHS(), args);
+    }
+    argMap.emplace(literal, args);
+  }
+
+  for (auto it1 = argMap.begin(), end = argMap.end(); it1 != end; ++it1) {
+    for (auto it2 = std::next(it1); it2 != end; ++it2) {
+      auto &p1 = *it1, &p2 = *it2;
+      if (p1.first == p2.first)
+        continue;
+      std::vector<std::string> commonArgs;
+      std::set_intersection(p1.second.begin(), p1.second.end(),
+                            p2.second.begin(), p2.second.end(),
+                            std::back_inserter(commonArgs));
+
+      if (commonArgs.empty())
+        continue;
+
+      auto srcV = getVertex(p1.first);
+      auto dstV = getVertex(p2.first);
+
+      for (auto &argName : commonArgs) {
+        EdgeNameT edgeName = argName;
+        boost::add_edge(srcV, dstV, edgeName, g);
+      }
+    }
+  }
+
+  bool hasFuncRel = std::any_of(literalToVertex.begin(), literalToVertex.end(),
+                                [this](const decltype(literalToVertex)::value_type &t) {
+                                  if (auto *a = dynamic_cast<AstAtom*>(t.first))
+                                    if (funcRels.count(a->getName().getName()))
+                                      return true;
+                                  return false;
+                                });
+
+    // Write out the graph
+
+    static unsigned print_count = 0;
+
+    struct {
+      Graph2 &g;
+
+      std::string sanitize(const std::string &s) {
+        return boost::algorithm::replace_all_copy(s, "?", "_");
+      }
+
+      void operator()(std::ostream &os, Graph2::edge_descriptor e) {
+        auto pmap = boost::get(boost::edge_name_t(), g);
+        os << "[label=\"" << sanitize(pmap[e]) << "\"]";
+      }
+    } wpe{g};
+
+
+    auto sanitize = [](const std::string &s) {
+      return boost::algorithm::replace_all_copy(s, "?", "_");
+    };
+
+    auto wpv = [&g, this, sanitize](std::ostream &os, Graph2::vertex_descriptor v) {
+      std::stringstream ss;
+      g[v]->print(ss);
+      os << " [label=\"" << sanitize(ss.str()) << "\"";
+      if (auto *atom = dynamic_cast<AstAtom*>(g[v])) {
+        if (funcRels.count(atom->getName().getName())) {
+          os << ", color=red";
+        }
+      }
+      os << "]" ;
+    };
+
+#if 0
+    struct {
+      Graph2 &g;
+      std::string sanitize(const std::string &s) {
+        return boost::algorithm::replace_all_copy(s, "?", "_");
+      }
+
+      void operator()(std::ostream &os, Graph2::vertex_descriptor v) {
+        std::stringstream ss;
+        g[v]->print(ss);
+        os << " [label=\"" << sanitize(ss.str()) << "\"]" ;
+      }
+    } wpv{g};
+#endif
+
+    DEBUG(
+      if (g.num_vertices() > 2 && hasFuncRel) {
+      auto gFile = std::ofstream(cls.getHead()->getName().getName() + "_" + std::to_string(print_count++) + "_2.gv");
+      gFile << "/*\n";
+      cls.print(gFile);
+      gFile << "\n*/\n";
+      boost::write_graphviz(gFile, g, wpv, wpe);
+    }
+    );
+  return false;
+}
 
 bool FuncLiteralOpt::handleClause(AstClause &cls) {
   Graph g;
@@ -54,7 +192,6 @@ bool FuncLiteralOpt::handleClause(AstClause &cls) {
     }
     return it->second;
   };
-
 
   for (auto *atom : cls.getAtoms()) {
     auto range = funcRels.equal_range(atom->getName().getName());
