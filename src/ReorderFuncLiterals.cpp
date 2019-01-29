@@ -30,12 +30,12 @@ public:
                  std::multimap<std::string, FunctionalRelationDesc> &&funcRels)
     : tu(tu), funcRels(std::move(funcRels)) {}
 
-  bool handleClause(AstClause &cls);
-  bool handleClause2(AstClause &cls);
+  bool printFuncRelDeps(AstClause &cls);
+  bool printAtomDeps(AstClause &cls);
   bool handleRelation(AstRelation &rel) {
     for (auto *cls : rel.getClauses()) {
-      handleClause(*cls);
-      handleClause2(*cls);
+      printFuncRelDeps(*cls);
+      printAtomDeps(*cls);
     }
     return false;
   }
@@ -57,8 +57,7 @@ static void collectVariableNames(const AstArgument *arg, std::set<std::string> &
   }
 }
 
-
-bool FuncLiteralOpt::handleClause2(AstClause &cls) {
+bool FuncLiteralOpt::printAtomDeps(AstClause &cls) {
   Graph2 g;
 
   std::map<AstLiteral*, std::set<std::string>> argMap;
@@ -73,7 +72,7 @@ bool FuncLiteralOpt::handleClause2(AstClause &cls) {
     return it->second;
   };
 
-  for (auto *literal : cls.getBodyLiterals()) {
+  for (auto *literal : cls.getAtoms()) {
     std::set<std::string> args;
     if (AstAtom *atom = dynamic_cast<AstAtom*>(literal)) {
       for (auto *arg : atom->getArguments()) {
@@ -109,6 +108,8 @@ bool FuncLiteralOpt::handleClause2(AstClause &cls) {
       }
     }
   }
+
+
 
   bool hasFuncRel = std::any_of(literalToVertex.begin(), literalToVertex.end(),
                                 [this](const decltype(literalToVertex)::value_type &t) {
@@ -152,21 +153,6 @@ bool FuncLiteralOpt::handleClause2(AstClause &cls) {
       os << "]" ;
     };
 
-#if 0
-    struct {
-      Graph2 &g;
-      std::string sanitize(const std::string &s) {
-        return boost::algorithm::replace_all_copy(s, "?", "_");
-      }
-
-      void operator()(std::ostream &os, Graph2::vertex_descriptor v) {
-        std::stringstream ss;
-        g[v]->print(ss);
-        os << " [label=\"" << sanitize(ss.str()) << "\"]" ;
-      }
-    } wpv{g};
-#endif
-
     DEBUG(
       if (g.num_vertices() > 2 && hasFuncRel) {
       auto gFile = std::ofstream(cls.getHead()->getName().getName() + "_" + std::to_string(print_count++) + "_2.gv");
@@ -179,7 +165,7 @@ bool FuncLiteralOpt::handleClause2(AstClause &cls) {
   return false;
 }
 
-bool FuncLiteralOpt::handleClause(AstClause &cls) {
+bool FuncLiteralOpt::printFuncRelDeps(AstClause &cls) {
   Graph g;
 
   std::map<std::string, Graph::vertex_descriptor> nameToVertex;
