@@ -3,6 +3,9 @@
 #include <set>
 #include <utility>
 #include <numeric>
+#include <boost/dynamic_bitset.hpp>
+#include <cmath>
+#include <fstream>
 
 /** Debug macros
  */
@@ -90,3 +93,149 @@ public:
   iterator begin() { return c.begin(); }
   iterator end() { return c.end(); }
 };
+
+
+/**
+   A join order optimizer using dynamic programming:
+   cost(A `join` B `join` C) = min(
+         size(A `join` B) * log(size(C)) + cost(A `join` B),
+         size(B `join` C) * log(size(A)) + cost(B `join` C),
+         size(A `join` C) * log(size(B)) + cost(A `join` C)).
+ */
+template<typename T>
+class JoinOrderOptimizer {
+public:
+  using bitset = boost::dynamic_bitset<>;
+private:
+  T &costModel;
+  // using the boost bitset and not the std one because
+  // we need the find_first/find_next methods
+  struct JoinInfo {
+    bitset pred;
+    unsigned size;
+    float cost;
+  };
+
+  std::map<bitset, JoinInfo> costMap;
+public:
+  JoinOrderOptimizer(T &costModel) :
+    costModel(costModel) {
+  }
+private:
+  unsigned joinSize(bitset join) {
+    std::vector<unsigned> joinAtoms;
+    for (auto i = join.find_first(); i != bitset::npos; i = join.find_next(i)) {
+      joinAtoms.push_back(i);
+    }
+    return costModel.joinSize(joinAtoms);
+  }
+
+  static float clampLog(unsigned n) {
+    // the base here should probably depend on the type of tree
+    // structure used to store the relation
+    // TODO: put this in accord with the heuristics for the
+    // relation structure
+    return std::log2(std::max(n, 2u));
+  }
+public:
+  std::pair<float, unsigned> computeCost(bitset join) {
+    auto it = costMap.find(join);
+    if (it != costMap.end())
+      return std::make_pair(it->second.cost, it->second.size);
+
+    if (join.none())
+      return std::make_pair(0.0f, 0);
+
+    JoinInfo result;
+    if (join.count() == 1) {
+      result.pred = bitset(0);
+      result.size = costModel.relationSize(join.find_first());
+      result.cost = 0.0f;
+    } else {
+      auto costMin = std::numeric_limits<float>::max();
+      unsigned iMin = 0;
+      for (auto i = join.find_first();
+           i != bitset::npos; i = join.find_next(i)) {
+        bitset outerJoin = join;
+        outerJoin.reset(i);
+
+        auto subsetCostAndSize = computeCost(outerJoin);
+        auto innerRelationSize = costModel.relationSize(i);
+
+        auto joinCost = subsetCostAndSize.second * clampLog(innerRelationSize);
+
+        if (costMin > joinCost) {
+          iMin = i;
+          costMin = joinCost;
+        }
+      }
+
+      result.pred = join;
+      result.pred.reset(iMin);
+      result.size = joinSize(join);
+      result.cost = costMin;
+    }
+
+    costMap.insert(std::make_pair(join, result));
+    return std::make_pair(result.cost, result.size);
+  }
+
+  std::vector<unsigned> getReverseJoinOrder(bitset join) {
+    std::vector<unsigned> ret;
+    // force a cost computation, if that was not done already.
+    computeCost(join);
+
+    auto it = costMap.find(join);
+    while (it != costMap.end()) {
+      unsigned i = (it->first & ~it->second.pred).find_first();
+      ret.push_back(i);
+      it = costMap.find(it->second.pred);
+    }
+    return ret;
+  }
+};
+
+/** Helper functions to iterate over all the elements in a tuple. Useless.
+ */
+template<unsigned i, typename Func, typename... Args>
+struct tuple_internal {
+private:
+  static void apply(const std::tuple<Args...> &tpl, Func &f) {
+    f.operator()(std::get<i>(tpl));
+    tuple_internal<i + 1, Func, Args...>::apply(tpl, f);
+  }
+public:
+  static void for_each(const std::tuple<Args...> &tpl, Func &f) {
+    tuple_internal<sizeof...(Args), Func, Args...>::apply(tpl, f);
+  }
+};
+
+template<typename Func, typename... Args>
+struct tuple_internal<0, Func, Args...> {
+private:
+  static void apply(const std::tuple<Args...> &, Func &&f) {}
+};
+
+template<typename Func, typename... Args>
+void tuple_for_each(const std::tuple<Args...> &tpl,  Func &f) {
+  tuple_internal<sizeof...(Args), Func, Args...>::for_each(tpl, f);
+}
+
+template<typename...Args>
+void writeOutSimpleCSV(const std::string &fileName, std::vector<std::tuple<Args...>> &vals) {
+  std::ofstream outFile(fileName);
+  struct {
+    std::ofstream &outFile;
+    void operator()(unsigned i) {
+      outFile << i << '\t';
+    }
+    void operator()(const std::string &s) {
+      outFile << s << '\t';
+    }
+  } printer{outFile};
+
+  for (auto &entry : vals) {
+    tuple_for_each(entry, printer);
+    std::cout << '\n';
+  }
+}

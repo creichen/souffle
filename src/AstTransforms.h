@@ -336,23 +336,41 @@ public:
  * Insert new predicates to check whether the existing ones can be decomposed to
  * to functions
  */
- class InsertFuncChecksTransformer : public AstTransformer {
- private:
-   bool transform(AstTranslationUnit &translationUnit) override;
- public:
-   std::string getName() const override {
-     return "InsertFuncChecksTransformer";
-   }
- };
+class InsertFuncChecksTransformer : public AstTransformer {
+private:
+  bool transform(AstTranslationUnit &translationUnit) override;
+public:
+  std::string getName() const override {
+    return "InsertFuncChecksTransformer";
+  }
+};
 
- class ReorderFuncLiteralsTransformer : public AstTransformer {
- private:
-   bool transform(AstTranslationUnit &translationUnit) override;
- public:
-   std::string getName() const override {
-     return "ReorderFuncLiteralsTransformer";
-   }
- };
+class ProjectionTransformer : public AstTransformer {
+private:
+  bool transform(AstTranslationUnit &translationUnit) override;
+public:
+  std::string getName() const override {
+    return "ProjectionTransformer";
+  }
+};
+
+class ReorderFuncLiteralsTransformer : public AstTransformer {
+private:
+  bool transform(AstTranslationUnit &translationUnit) override;
+public:
+  std::string getName() const override {
+    return "ReorderFuncLiteralsTransformer";
+  }
+};
+
+class JoinOrderTransformer : public AstTransformer {
+private:
+  bool transform(AstTranslationUnit &translationUnit) override;
+public:
+  std::string getName() const override {
+    return "JoinOrderTransformer";
+  }
+};
 
 /**
  * Transformer that holds an arbitrary number of sub-transformations

@@ -211,6 +211,7 @@ int main(int argc, char** argv) {
                             {"func-check", 'f', "", "", false, "Generate function checks."},
                             {"func-opt", 'O', "FILE", "", false, "Optimize functional relations."},
                             {"dump-ram", 'R', "FILE", "", false, "Dump the RAM."},
+                            {"gen-proj", 'J', "", "", false, "Generate projection relations."},
                             {"help", 'h', "", "", false, "Display this help message."}};
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
                 }());
@@ -475,7 +476,9 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<ReorderLiteralsTransformer>(),
                                                           std::make_unique<ReorderFuncLiteralsTransformer>(),
+                                                          std::make_unique<ProjectionTransformer>(),
                                                           std::move(magicPipeline),
+
             std::make_unique<AstExecutionPlanChecker>(),
                                                           std::move(provenancePipeline));
 

@@ -1,5 +1,6 @@
 #include "AstTransforms.h"
 #include "Global.h"
+#include "json11.h"
 #include <memory>
 #include <string>
 #include <numeric>
@@ -7,10 +8,15 @@
 #include <set>
 #include <fstream>
 #include "FuncChecksCommon.h"
+#include "boost/range/irange.hpp"
 
 using namespace souffle;
 
-static std::string generateRelName(const std::string &predName, const std::set<unsigned> argSet, unsigned dst) {
+
+
+static std::string generateRelName(const std::string &predName,
+                                   const std::set<unsigned> argSet,
+                                   unsigned dst) {
   std::string res = "nf_";
   res += predName;
   for (unsigned i : argSet) {
@@ -20,6 +26,177 @@ static std::string generateRelName(const std::string &predName, const std::set<u
   return res;
 }
 
+static std::string generateProjectionName(const std::string &relName,
+                                          const std::set<unsigned> &args) {
+  std::string res = "proj_";
+  res += relName;
+  for (unsigned i : args) {
+    res += "_" + std::to_string(i);
+  }
+  return res;
+}
+
+/** Generate a projection of relation R using arguments args. Output the size
+    of the projection.
+ */
+std::unique_ptr<AstRelation>
+generateProjection(const AstRelation &R, const std::set<unsigned> &args) {
+  auto relId = AstRelationIdentifier(generateProjectionName(R.getName().getName(), args));
+
+  auto rel = std::make_unique<AstRelation>();
+  rel->setName(relId);
+  // transfer the types
+  for (auto arg : args) {
+    auto attr = R.getAttribute(arg);
+    rel->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
+  }
+  // now introduce a projection clause
+  auto cls = std::make_unique<AstClause>();
+  auto head = std::make_unique<AstAtom>(rel->getName());
+  auto body = std::make_unique<AstAtom>(R.getName());
+
+  for (auto arg : args) {
+    head->addArgument(std::make_unique<AstVariable>("v" + std::to_string(arg)));
+  }
+
+  for (unsigned i = 0; i < R.getArity(); ++i) {
+    if (!args.count(i))
+      body->addArgument(std::make_unique<AstUnnamedVariable>());
+    else
+      body->addArgument(std::make_unique<AstVariable>("v" + std::to_string(i)));
+  }
+
+  cls->setHead(std::move(head));
+  cls->addToBody(std::move(body));
+
+  DEBUG(
+    cls->print(std::cout);
+    std::cout << "\n";);
+
+
+  rel->addClause(std::move(cls));
+
+  auto io = std::make_unique<AstIODirective>();
+  io->setAsPrintSize();
+  io->addName(relId);
+
+  rel->addIODirectives(std::move(io));
+
+  DEBUG(rel->print(std::cout);
+        std::cout << "\n");
+
+
+  return rel;
+}
+
+template<typename I>
+static std::set<std::string> collectJoinVariables(I begin, I end) {
+  std::set<std::string> joinVars;
+  std::map<AstAtom*, std::set<std::string>> argMap;
+  for (auto *atom : make_range(begin, end)) {
+    for (auto *arg : atom->getArguments()) {
+      auto *var = dynamic_cast<AstVariable*>(arg);
+      assert(var && "Expecting only variables as arguments");
+      argMap[atom].emplace(var->getName());
+    }
+  }
+
+  for (auto it1 = argMap.begin(), end = argMap.end(); it1 != end; ++it1) {
+    for (auto it2 = std::next(it1); it2 != end; ++it2) {
+      auto &p1 = *it1, &p2 = *it2;
+      assert(p1.first != p2.first);
+
+      std::vector<std::string> commonArgs;
+      std::set_intersection(p1.second.begin(), p1.second.end(),
+                            p2.second.begin(), p2.second.end(),
+                            std::back_inserter(commonArgs));
+
+      std::set<std::string> nextJoinVars;
+      std::set_union(joinVars.begin(), joinVars.end(), commonArgs.begin(), commonArgs.end(),
+                     std::inserter(nextJoinVars, nextJoinVars.begin()));
+      joinVars = std::move(nextJoinVars);
+    }
+  }
+  return joinVars;
+}
+
+static std::set<unsigned> collectVarIndices(const AstAtom *atom,
+                                            const std::set<std::string> &joinVars) {
+  std::set<unsigned> projIndices;
+  for (unsigned i = 0; i < atom->getArity(); ++i) {
+    auto *var = dynamic_cast<AstVariable*>(atom->getArgument(i));
+    assert(var && "Expecting only variables as arguments");
+    if (joinVars.count(var->getName()))
+      projIndices.insert(i);
+  }
+  return projIndices;
+}
+
+using ProjDesc = std::pair<std::string /* original relation name */,
+                           std::set<unsigned> /* projection indices */>;
+
+static std::map<ProjDesc, std::unique_ptr<AstRelation>>
+generateProjectionsForProgram(AstProgram *prog) {
+  std::map<ProjDesc, std::unique_ptr<AstRelation>> projections;
+
+  auto generateProj = [&projections](const AstRelation *relToProj,
+                                     const std::set<unsigned> &projIndices) {
+    if (!projections.count(std::make_pair(relToProj->getName().getName(), projIndices))) {
+      auto projRel = generateProjection(*relToProj, projIndices);
+      projections.emplace(std::make_pair(relToProj->getName().getName(), projIndices),
+                          std::move(projRel));
+    }
+  };
+
+  for (auto *rel : prog->getRelations()) {
+    for (auto *cls : rel->getClauses()) {
+      // optimize only relations with fixed execution plans
+      // TODO: introduce a new annotation for this
+      if (!cls->getExecutionPlan())
+        continue;
+
+      const auto &atoms = cls->getAtoms();
+      auto joinVars = collectJoinVariables(atoms.begin(), atoms.end());
+
+      for (auto *atom : atoms) {
+        const auto &projIndices = collectVarIndices(atom, joinVars);
+        if (projIndices.empty())
+          continue;
+
+        auto *relToProj = prog->getRelation(atom->getName());
+        generateProj(relToProj, projIndices);
+
+        std::set<unsigned> allIndices(boost::irange(atom->getArity()).begin(),
+                                      boost::irange(atom->getArity()).end());
+        generateProj(relToProj, allIndices);
+      }
+    }
+  }
+  return projections;
+}
+
+bool ProjectionTransformer::transform(AstTranslationUnit &translationUnit) {
+  if (!Global::config().has("gen-proj"))
+    return false;
+
+  auto projections =
+    generateProjectionsForProgram(translationUnit.getProgram());
+
+  auto &dir = Global::config().get("output-dir");
+  std::ofstream projMapFile(dir + "/ProjMap.csv");
+
+  for (auto &p : projections) {
+    projMapFile << p.first.first << "\t";
+    projMapFile << p.second->getName().getName();
+    for (auto i : p.first.second) {
+      projMapFile << "\t" << i;
+    }
+    projMapFile << "\n";
+    translationUnit.getProgram()->appendRelation(std::move(p.second));
+  }
+
+  return false;
+}
 
 /** for every relation, generate other relations to test for functional relations
     between its columns */
@@ -144,52 +321,6 @@ std::map<FunctionalRelationDesc, std::unique_ptr<AstRelation>> generateFuncTestP
   return clauses;
 }
 
-/** Helper functions to iterate over all the elements in a tuple. Useless.
- */
-template<unsigned i, typename Func, typename... Args>
-struct tuple_internal {
-private:
-  static void apply(const std::tuple<Args...> &tpl, Func &f) {
-    f.operator()(std::get<i>(tpl));
-    tuple_internal<i + 1, Func, Args...>::apply(tpl, f);
-  }
-public:
-  static void for_each(const std::tuple<Args...> &tpl, Func &f) {
-    tuple_internal<sizeof...(Args), Func, Args...>::apply(tpl, f);
-  }
-};
-
-template<typename Func, typename... Args>
-struct tuple_internal<0, Func, Args...> {
-private:
-  static void apply(const std::tuple<Args...> &, Func &&f) {}
-};
-
-template<typename Func, typename... Args>
-void tuple_for_each(const std::tuple<Args...> &tpl,  Func &f) {
-  tuple_internal<sizeof...(Args), Func, Args...>::for_each(tpl, f);
-}
-
-template<typename...Args>
-void writeOutSimpleCSV(const std::string &fileName, std::vector<std::tuple<Args...>> &vals) {
-  std::ofstream outFile(fileName);
-  struct {
-    std::ofstream &outFile;
-    void operator()(unsigned i) {
-      outFile << i << '\t';
-    }
-    void operator()(const std::string &s) {
-      outFile << s << '\t';
-    }
-  } printer{outFile};
-
-  for (auto &entry : vals) {
-    tuple_for_each(entry, printer);
-    std::cout << '\n';
-  }
-}
-
-/* End of useless */
 
 
 
@@ -266,6 +397,121 @@ bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit)
 
   return false;
 }
+
+class SimpleCostModel {
+  const std::map<ProjDesc, unsigned> &projSize;
+  const std::vector<AstAtom*> atoms;
+public:
+  SimpleCostModel(const AstClause &cls,
+                  const std::map<ProjDesc, unsigned> &projSize) :
+    projSize(projSize),
+    atoms(cls.getAtoms()) {}
+
+  unsigned relationSize(unsigned i) const {
+    auto r = boost::irange(atoms[i]->getArity());
+    std::set<unsigned> indices(r.begin(), r.end());
+    auto it = projSize.find(make_pair(atoms[i]->getName().getName(), std::move(indices)));
+    assert (it != projSize.end());
+    return it->second;
+  }
+
+  unsigned joinSize(const std::vector<unsigned> &joinAtoms) const {
+    // This implements the first algorithm in the paper
+    // "On the Estimation of Join Result Sizes"
+    std::vector<AstAtom*> currentAtoms;
+    std::transform(joinAtoms.begin(), joinAtoms.end(),
+                   std::back_inserter(currentAtoms), [this](unsigned i) { return atoms[i]; });
+    const auto &joinVars = collectJoinVariables(currentAtoms.begin(), currentAtoms.end());
+
+    // use a set, to easily iterate in increasing order
+    std::set<unsigned> selectivity;
+
+    for (unsigned atomIdx : joinAtoms) {
+      const auto &joinIndices = collectVarIndices(atoms[atomIdx], joinVars);
+      assert(!joinIndices.empty());
+      auto it = projSize.find(make_pair(atoms[atomIdx]->getName().getName(), std::move(joinIndices)));
+      assert (it != projSize.end());
+      assert(it->second && "Relation with empty projection");
+      selectivity.insert(it->second);
+    }
+
+    // multiply all the selectivities, except the smallest one
+    auto selP = std::accumulate(std::next(selectivity.begin()), selectivity.end(), 1.0f,
+                                std::multiplies<float>());
+    auto sizeP = std::accumulate(joinAtoms.begin(), joinAtoms.end(), 1.0f,
+                                 [this](float f, unsigned i){
+                                   return f * relationSize(i);
+                                 });
+    assert(selP != 0.0);
+    auto r = sizeP / selP;
+    assert(r < (float)std::numeric_limits<unsigned>::max());
+    return r;
+  }
+
+  unsigned countAtoms() const {
+    return atoms.size();
+  }
+};
+
+
+static bool optimizeClause(AstClause &clause,
+                           const std::map<ProjDesc, unsigned> &projSize) {
+  SimpleCostModel scm(clause, projSize);
+  JoinOrderOptimizer<SimpleCostModel> jopt(scm);
+
+
+  JoinOrderOptimizer<SimpleCostModel>::bitset bits;
+  bits.set(0, scm.countAtoms(), true);
+  const auto &joinOrderR = jopt.getReverseJoinOrder(bits);
+
+  clause.print(std::cout);
+  std::cout << "\n[";
+  for (auto i : make_range(joinOrderR.rbegin(), joinOrderR.rend()))
+    std::cout << i << " ";
+  std::cout << "]\n";
+
+  return false;
+}
+
+bool JoinOrderTransformer::transform(AstTranslationUnit &translationUnit) {
+  if (!Global::config().has("opt-join"))
+    return false;
+
+  // read the size of the projection from a JSON file
+  std::ifstream projSizeS(Global::config().get("opt-join"));
+  std::string projSizeStr((std::istreambuf_iterator<char>(projSizeS)), std::istreambuf_iterator<char>());
+  std::string err;
+  auto projSizeJ = json11::Json::parse(projSizeStr, err);
+
+  assert(projSizeJ.is_array());
+  std::map<ProjDesc, unsigned> projSize;
+  for (auto &o : projSizeJ.array_items()) {
+    assert(o.is_object());
+    const auto &name = o["name"].string_value();
+    const unsigned size = o["size"].int_value();
+    std::set<unsigned> indices;
+    for (auto i : o["attr"].array_items())
+      indices.insert(i.int_value());
+    projSize.emplace(std::make_pair(name, std::move(indices)), size);
+  }
+
+  // now build a cost model object
+
+
+
+  auto *program = translationUnit.getProgram();
+
+  for (auto *rel : program->getRelations()) {
+    for (auto *clause : rel->getClauses()) {
+      if (clause->getExecutionPlan())
+        optimizeClause(*clause, projSize);
+    }
+  }
+
+  return false;
+
+}
+
 
 /** Some test code that is run at application startup time */
 struct SelfTest {

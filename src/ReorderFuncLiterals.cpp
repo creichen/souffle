@@ -8,7 +8,7 @@
 #include <boost/graph/directed_graph.hpp>
 #include <boost/graph/undirected_graph.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/dynamic_bitset.hpp>
+
 
 #include <fstream>
 
@@ -23,115 +23,6 @@ using Graph = boost::directed_graph<
 using Graph2 = boost::undirected_graph<
   AstLiteral*,
   EdgeNameT>;
-
-
-class DummyCostModel {
-  unsigned relationSize(unsigned i) {
-    return 1;
-  }
-  unsigned joinSize(const std::vector<unsigned> &joinAtoms) {
-    return 1;
-  }
-};
-
-/**
-   A join order optimizer using dynamic programming:
-   cost(A `join` B `join` C) = min(
-         size(A `join` B) * log(size(C)) + cost(A `join` B),
-         size(B `join` C) * log(size(A)) + cost(B `join` C),
-         size(A `join` C) * log(size(B)) + cost(A `join` C)).
- */
-template<typename T>
-class JoinOrderOptimizer {
-  T &costModel;
-  // using the boost bitset and not the std one because
-  // we need the find_first/find_next methods
-  using bitset = boost::dynamic_bitset<>;
-
-  struct JoinInfo {
-    bitset pred;
-    unsigned size;
-    float cost;
-  };
-
-  std::map<bitset, JoinInfo> costMap;
-
-  JoinOrderOptimizer(T &costModel) :
-    costModel(costModel) {
-  }
-
-  unsigned joinSize(bitset join) {
-    std::vector<unsigned> joinAtoms;
-    for (auto i = join.find_first(); i != bitset::npos; i = join.find_next(i)) {
-      joinAtoms.push_back(i);
-    }
-    return costModel.joinSize(joinAtoms);
-  }
-
-  static float clampLog(unsigned n) {
-    // the base here should probably depend on the type of tree
-    // structure used to store the relation
-    // TODO: put this in accord with the heuristics for the
-    // relation structure
-    return std::log2(std::max(n, 2u));
-  }
-
-  std::pair<float, unsigned> computeCost(bitset join) {
-    auto it = costMap.find(join);
-    if (it != costMap.end())
-      return std::make_pair(it->cost, it->size);
-
-    if (join.none())
-      return std::make_pair(0.0f, 0);
-
-    JoinInfo result;
-    if (join.count() = 1) {
-      result.pred = bitset(0);
-      result.size = costModel.relationSize(result.idx);
-      result.cost = 0.0f;
-    } else {
-      auto costMin = std::numeric_limits<float>::max();
-      unsigned iMin = 0;
-      for (auto i = join.find_first();
-           i != bitset::npos; i = join.find_next(i)) {
-        bitset outerJoin = join;
-        outerJoin.reset(i);
-
-        auto subsetCostAndSize = computeCost(outerJoin);
-        auto innerRelationSize = costModel.relationSize(i);
-
-        auto joinCost = subsetCostAndSize.second * clampLog2(innerRelationSize);
-
-        if (costMin > joinCost) {
-          iMin = i;
-          costMin = joinCost;
-        }
-      }
-
-      result.pred = join;
-      result.pred.reset(iMin);
-      result.size = joinSize(join);
-      result.cost = costMin;
-    }
-
-    costMap.insert(join, result);
-    return result.cost;
-  }
-
-  std::vector<unsigned> getReverseJoinOrder(bitset join) {
-    std::vector<unsigned> ret;
-    // force a cost computation, if that was not done already.
-    computeCost(join);
-
-    auto it = costMap.find(join);
-    while (it != costMap.end()) {
-      unsigned i = (it->first & ~it->second.pred).find_first();
-      ret.push_back(i);
-      it = costMap.find(it->second.pred());
-    }
-    return ret;
-  }
-};
 
 
 class FuncLiteralOpt {
