@@ -102,10 +102,13 @@ public:
          size(B `join` C) * log(size(A)) + cost(B `join` C),
          size(A `join` C) * log(size(B)) + cost(A `join` C)).
  */
+using rel_size_t = uint64_t;
+
 template<typename T>
 class JoinOrderOptimizer {
 public:
   using bitset = boost::dynamic_bitset<>;
+
 private:
   T &costModel;
   // using the boost bitset and not the std one because
@@ -122,7 +125,7 @@ public:
     costModel(costModel) {
   }
 private:
-  unsigned joinSize(bitset join) {
+  rel_size_t joinSize(bitset join) {
     std::vector<unsigned> joinAtoms;
     for (auto i = join.find_first(); i != bitset::npos; i = join.find_next(i)) {
       joinAtoms.push_back(i);
@@ -130,25 +133,26 @@ private:
     return costModel.joinSize(joinAtoms);
   }
 
-  static float clampLog(unsigned n) {
+  static float clampLog(rel_size_t n) {
     // the base here should probably depend on the type of tree
     // structure used to store the relation
     // TODO: put this in accord with the heuristics for the
     // relation structure
-    return std::log2(std::max(n, 2u));
+    return std::log2(std::max(n, rel_size_t(2u)));
   }
 public:
-  std::pair<float, unsigned> computeCost(bitset join) {
+  std::pair<float, rel_size_t> computeCost(bitset join) {
     auto it = costMap.find(join);
     if (it != costMap.end())
       return std::make_pair(it->second.cost, it->second.size);
+
 
     if (join.none())
       return std::make_pair(0.0f, 0);
 
     JoinInfo result;
     if (join.count() == 1) {
-      result.pred = bitset(0);
+      result.pred = bitset(join.size());
       result.size = costModel.relationSize(join.find_first());
       result.cost = 0.0f;
     } else {

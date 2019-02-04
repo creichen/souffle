@@ -208,11 +208,15 @@ int main(int argc, char** argv) {
                             {"verbose", 'v', "", "", false, "Verbose output."},
                             {"version", '\2', "", "", false, "Version."},
                             {"debug", 'd', "", "", false, "Debug printout."},
+                            // tadalog args
                             {"func-check", 'f', "", "", false, "Generate function checks."},
                             {"func-opt", 'O', "FILE", "", false, "Optimize functional relations."},
                             {"dump-ram", 'R', "FILE", "", false, "Dump the RAM."},
                             {"gen-proj", 'J', "", "", false, "Generate projection relations."},
-                            {"help", 'h', "", "", false, "Display this help message."}};
+                            {"opt-join", 'T', "FILE", "", false, "Optimize join order from relation size."},
+                            // end of tadalog args
+                            {"help", 'h', "", "", false, "Display this help message."}
+                    };
                     return std::vector<MainOption>(std::begin(opts), std::end(opts));
                 }());
 
@@ -477,6 +481,7 @@ int main(int argc, char** argv) {
             std::make_unique<ReorderLiteralsTransformer>(),
                                                           std::make_unique<ReorderFuncLiteralsTransformer>(),
                                                           std::make_unique<ProjectionTransformer>(),
+                                                          std::make_unique<JoinOrderTransformer>(),
                                                           std::move(magicPipeline),
 
             std::make_unique<AstExecutionPlanChecker>(),

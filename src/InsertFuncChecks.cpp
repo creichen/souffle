@@ -9,6 +9,7 @@
 #include <fstream>
 #include "FuncChecksCommon.h"
 #include "boost/range/irange.hpp"
+#include "boost/pending/disjoint_sets.hpp"
 
 using namespace souffle;
 
@@ -399,15 +400,17 @@ bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit)
 }
 
 class SimpleCostModel {
-  const std::map<ProjDesc, unsigned> &projSize;
-  const std::vector<AstAtom*> atoms;
+  const std::map<ProjDesc, rel_size_t> &projSize;
+  const std::vector<AstAtom*> &atoms;
+  const std::set<std::string> joinVars;
 public:
-  SimpleCostModel(const AstClause &cls,
-                  const std::map<ProjDesc, unsigned> &projSize) :
+  SimpleCostModel(const std::vector<AstAtom*> &atoms,
+                  const std::map<ProjDesc, rel_size_t> &projSize) :
     projSize(projSize),
-    atoms(cls.getAtoms()) {}
+    atoms(atoms),
+    joinVars(collectJoinVariables(atoms.begin(), atoms.end())) {}
 
-  unsigned relationSize(unsigned i) const {
+  rel_size_t relationSize(unsigned i) const {
     auto r = boost::irange(atoms[i]->getArity());
     std::set<unsigned> indices(r.begin(), r.end());
     auto it = projSize.find(make_pair(atoms[i]->getName().getName(), std::move(indices)));
@@ -415,36 +418,49 @@ public:
     return it->second;
   }
 
-  unsigned joinSize(const std::vector<unsigned> &joinAtoms) const {
+  rel_size_t joinSize(const std::vector<unsigned> &joinAtoms) const {
     // This implements the first algorithm in the paper
     // "On the Estimation of Join Result Sizes"
-    std::vector<AstAtom*> currentAtoms;
-    std::transform(joinAtoms.begin(), joinAtoms.end(),
-                   std::back_inserter(currentAtoms), [this](unsigned i) { return atoms[i]; });
-    const auto &joinVars = collectJoinVariables(currentAtoms.begin(), currentAtoms.end());
+    // std::vector<AstAtom*> currentAtoms;
+    // std::transform(joinAtoms.begin(), joinAtoms.end(),
+    //    std::back_inserter(currentAtoms), [this](unsigned i) { return atoms[i]; });
+    //const auto &joinVars = collectJoinVariables(currentAtoms.begin(), currentAtoms.end());
 
     // use a set, to easily iterate in increasing order
-    std::set<unsigned> selectivity;
+    std::set<rel_size_t> selectivity;
 
     for (unsigned atomIdx : joinAtoms) {
       const auto &joinIndices = collectVarIndices(atoms[atomIdx], joinVars);
       assert(!joinIndices.empty());
       auto it = projSize.find(make_pair(atoms[atomIdx]->getName().getName(), std::move(joinIndices)));
       assert (it != projSize.end());
+
+      // TODO: this probably will not happen...
+      if (it->second == 0) {
+        std::cerr << "Relation " << atoms[atomIdx]->getName().getName()
+                  << " has an empty projection on " << joinIndices << "\n";
+        return 0;
+      }
+
       assert(it->second && "Relation with empty projection");
       selectivity.insert(it->second);
     }
 
-    // multiply all the selectivities, except the smallest one
-    auto selP = std::accumulate(std::next(selectivity.begin()), selectivity.end(), 1.0f,
-                                std::multiplies<float>());
-    auto sizeP = std::accumulate(joinAtoms.begin(), joinAtoms.end(), 1.0f,
-                                 [this](float f, unsigned i){
+    // Multiply all the selectivities, except the smallest one
+    // The value of the product can be fairly bing and overflow uint64_t
+    // Use double to get a larger range.
+
+
+
+    auto selP = std::accumulate(std::next(selectivity.begin()), selectivity.end(), 1.0,
+                                std::multiplies<double>());
+    auto sizeP = std::accumulate(joinAtoms.begin(), joinAtoms.end(), 1.0,
+                                 [this](double f, unsigned i){
                                    return f * relationSize(i);
                                  });
     assert(selP != 0.0);
     auto r = sizeP / selP;
-    assert(r < (float)std::numeric_limits<unsigned>::max());
+    assert(r < (float)std::numeric_limits<rel_size_t>::max());
     return r;
   }
 
@@ -454,21 +470,98 @@ public:
 };
 
 
+/** Given a vector of atoms partition it such that
+    atoms in different classes have disjoint argument
+    sets.
+ */
+static std::vector<std::vector<AstAtom*>>
+getDisjointJoins(const std::vector<AstAtom*> &atoms) {
+  // union-find container definition
+  using RankPA = std::map<AstAtom*, unsigned>;
+  using ParentPA = std::map<AstAtom*, AstAtom*>;
+  RankPA ranks;
+  ParentPA parents;
+  boost::associative_property_map<RankPA> ranksp(ranks);
+  boost::associative_property_map<ParentPA> parentsp(parents);
+  boost::disjoint_sets<decltype(ranksp), decltype(parentsp)> eqAtoms(ranksp, parentsp);
+  // collect the arguments of the atoms
+  std::set<std::string> joinVars;
+  std::map<AstAtom*, std::set<std::string>> argMap;
+  for (auto *atom : atoms) {
+    eqAtoms.make_set(atom);
+    for (auto *arg : atom->getArguments()) {
+      auto *var = dynamic_cast<AstVariable*>(arg);
+      assert(var && "Expecting only variables as arguments");
+      argMap[atom].emplace(var->getName());
+    }
+  }
+
+  // any two atoms that have arguments in common belong to
+  // the same equivalence class
+  for (auto it1 = argMap.begin(), end = argMap.end(); it1 != end; ++it1) {
+    for (auto it2 = std::next(it1); it2 != end; ++it2) {
+      auto &p1 = *it1, &p2 = *it2;
+      assert(p1.first != p2.first);
+
+      std::vector<std::string> commonArgs;
+      std::set_intersection(p1.second.begin(), p1.second.end(),
+                            p2.second.begin(), p2.second.end(),
+                            std::back_inserter(commonArgs));
+      if (!commonArgs.empty())
+        eqAtoms.union_set(p1.first, p2.first);
+    }
+  }
+
+  // add a comparison function for deterministic iteration order
+  auto comp = [](AstAtom *a, AstAtom *b) {
+    return a->getName().getName() <
+           b->getName().getName();
+  };
+  std::map<AstAtom*, std::vector<AstAtom*>, decltype(comp)> eqClasses(comp);
+  for (auto *atom : atoms) {
+    eqClasses[eqAtoms.find_set(atom)].push_back(atom);
+  }
+
+  // now move everything into a vector
+  std::vector<std::vector<AstAtom*>> ret;
+  for (auto &kv : eqClasses) {
+    assert(!kv.second.empty() && "Unexpected empty join set");
+    ret.emplace_back(kv.second);
+  }
+
+  return ret;
+}
+
 static bool optimizeClause(AstClause &clause,
-                           const std::map<ProjDesc, unsigned> &projSize) {
-  SimpleCostModel scm(clause, projSize);
-  JoinOrderOptimizer<SimpleCostModel> jopt(scm);
+                           const std::map<ProjDesc, rel_size_t> &projSize) {
 
+  const auto &atoms = clause.getAtoms();
+  auto joinSets = getDisjointJoins(atoms);
 
-  JoinOrderOptimizer<SimpleCostModel>::bitset bits;
-  bits.set(0, scm.countAtoms(), true);
-  const auto &joinOrderR = jopt.getReverseJoinOrder(bits);
-
+  std::cout << "=== Optimizing clause:\n";
   clause.print(std::cout);
-  std::cout << "\n[";
-  for (auto i : make_range(joinOrderR.rbegin(), joinOrderR.rend()))
-    std::cout << i << " ";
-  std::cout << "]\n";
+
+  std::cout << "\nJoin sets: " << joinSets.size() << "\n";
+
+  for (auto &joinSet : joinSets) {
+
+    if (joinSet.size() == 1)
+      continue;
+
+    SimpleCostModel scm(joinSet, projSize);
+    JoinOrderOptimizer<SimpleCostModel> jopt(scm);
+
+    JoinOrderOptimizer<SimpleCostModel>::bitset bits(scm.countAtoms(), 0);
+    bits.set(0, scm.countAtoms(), true);
+    const auto &joinOrderR = jopt.getReverseJoinOrder(bits);
+
+
+    std::cout << "\n[";
+    for (auto i : make_range(joinOrderR.rbegin(), joinOrderR.rend()))
+      std::cout << i << " ";
+    std::cout << "]\n";
+
+  }
 
   return false;
 }
@@ -484,11 +577,11 @@ bool JoinOrderTransformer::transform(AstTranslationUnit &translationUnit) {
   auto projSizeJ = json11::Json::parse(projSizeStr, err);
 
   assert(projSizeJ.is_array());
-  std::map<ProjDesc, unsigned> projSize;
+  std::map<ProjDesc, rel_size_t> projSize;
   for (auto &o : projSizeJ.array_items()) {
     assert(o.is_object());
     const auto &name = o["name"].string_value();
-    const unsigned size = o["size"].int_value();
+    const rel_size_t size = o["size"].long_value();
     std::set<unsigned> indices;
     for (auto i : o["attr"].array_items())
       indices.insert(i.int_value());
@@ -496,9 +589,6 @@ bool JoinOrderTransformer::transform(AstTranslationUnit &translationUnit) {
   }
 
   // now build a cost model object
-
-
-
   auto *program = translationUnit.getProgram();
 
   for (auto *rel : program->getRelations()) {
