@@ -421,10 +421,6 @@ public:
   rel_size_t joinSize(const std::vector<unsigned> &joinAtoms) const {
     // This implements the first algorithm in the paper
     // "On the Estimation of Join Result Sizes"
-    // std::vector<AstAtom*> currentAtoms;
-    // std::transform(joinAtoms.begin(), joinAtoms.end(),
-    //    std::back_inserter(currentAtoms), [this](unsigned i) { return atoms[i]; });
-    //const auto &joinVars = collectJoinVariables(currentAtoms.begin(), currentAtoms.end());
 
     // use a set, to easily iterate in increasing order
     std::set<rel_size_t> selectivity;
@@ -543,10 +539,29 @@ static bool optimizeClause(AstClause &clause,
 
   std::cout << "\nJoin sets: " << joinSets.size() << "\n";
 
-  for (auto &joinSet : joinSets) {
+  auto atomIndex = [&atoms](const AstAtom* a) {
+    auto it = std::find(atoms.begin(), atoms.end(), a);
+    assert(it != atoms.end());
+    return std::distance(atoms.begin(), it);
+  };
 
-    if (joinSet.size() == 1)
+  std::vector<unsigned> newAtomOrder;
+
+  // TODO: heuristic
+  // sort the join sets on descending order
+  std::sort(joinSets.begin(), joinSets.end(),
+            [](const decltype(joinSets)::value_type &v1,
+               const decltype(joinSets)::value_type &v2) {
+              return v1.size() < v2.size();
+            });
+
+  for (auto &joinSet : joinSets) {
+    if (joinSet.size() == 1) {
+      // not worth to optimize joins involving one atom
+      std::cout << "\[" << atomIndex(joinSet[0]) << "]\n";
+      newAtomOrder.push_back(atomIndex(joinSet[0]));
       continue;
+    }
 
     SimpleCostModel scm(joinSet, projSize);
     JoinOrderOptimizer<SimpleCostModel> jopt(scm);
@@ -555,13 +570,20 @@ static bool optimizeClause(AstClause &clause,
     bits.set(0, scm.countAtoms(), true);
     const auto &joinOrderR = jopt.getReverseJoinOrder(bits);
 
-
     std::cout << "\n[";
-    for (auto i : make_range(joinOrderR.rbegin(), joinOrderR.rend()))
-      std::cout << i << " ";
-    std::cout << "]\n";
+    for (auto i : make_range(joinOrderR.rbegin(), joinOrderR.rend())) {
+      std::cout << atomIndex(joinSet[i]) << " ";
+      newAtomOrder.push_back(atomIndex(joinSet[i]));
 
+    }
+    std::cout << "]\n";
   }
+
+  clause.reorderAtoms(newAtomOrder);
+  clause.clearExecutionPlan();
+
+  clause.print(std::cout);
+  std::cout << "\n===================================\n";
 
   return false;
 }
