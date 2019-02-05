@@ -7,6 +7,7 @@
 #include <map>
 #include <set>
 #include <fstream>
+#include <cmath>
 #include "FuncChecksCommon.h"
 #include "boost/range/irange.hpp"
 #include "boost/pending/disjoint_sets.hpp"
@@ -342,17 +343,6 @@ bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit)
       continue;
     auto funcTestRels = generateFuncTestPredicates(*r);
 
-    // newRelations.insert(newRelations.end(),
-    //                     std::make_move_iterator(funcTestRels.begin()),
-    //                     std::make_move_iterator(funcTestRels.end()));
-
-
-    // SymbolTable symbolTable;
-    // ErrorReport errorReport;
-    // DebugReport debugReport;
-    // auto newTU = std::make_unique<AstTranslationUnit>(
-    //   std::unique_ptr<AstProgram>(new AstProgram()), symbolTable, errorReport, debugReport);
-
     auto newProg = std::unique_ptr<AstProgram>(new AstProgram());
 
     // add the types that are required
@@ -390,10 +380,6 @@ bool InsertFuncChecksTransformer::transform(AstTranslationUnit &translationUnit)
 
   }
 
-  // for (auto &rel : newRelations) {
-  //   prog.appendRelation(std::move(rel));
-  // }
-
   std::cout << "\nGenerated " << newRelations.size() << " function test relations\n";
 
   return false;
@@ -423,7 +409,14 @@ public:
     // "On the Estimation of Join Result Sizes"
 
     // use a set, to easily iterate in increasing order
-    std::set<rel_size_t> selectivity;
+    std::vector<rel_size_t> selectivity;
+
+    DEBUG(
+      std::cout << "Computing join size on vars: ";
+      for (auto &v : joinVars)
+        std::cout << v << " ";
+      std::cout << "\n";
+      );
 
     for (unsigned atomIdx : joinAtoms) {
       const auto &joinIndices = collectVarIndices(atoms[atomIdx], joinVars);
@@ -439,24 +432,34 @@ public:
       }
 
       assert(it->second && "Relation with empty projection");
-      selectivity.insert(it->second);
+      selectivity.push_back(it->second);
+
+      DEBUG(
+        atoms[atomIdx]->print(std::cout);
+        std::cout << "\n projection size: " << it->second;
+        std::cout << "\n relation size: " << relationSize(atomIdx) << "\n";
+        );
     }
 
     // Multiply all the selectivities, except the smallest one
     // The value of the product can be fairly bing and overflow uint64_t
     // Use double to get a larger range.
 
-
-
+    std::sort(selectivity.begin(), selectivity.end());
     auto selP = std::accumulate(std::next(selectivity.begin()), selectivity.end(), 1.0,
                                 std::multiplies<double>());
     auto sizeP = std::accumulate(joinAtoms.begin(), joinAtoms.end(), 1.0,
                                  [this](double f, unsigned i){
                                    return f * relationSize(i);
                                  });
+
     assert(selP != 0.0);
     auto r = sizeP / selP;
     assert(r < (float)std::numeric_limits<rel_size_t>::max());
+
+
+    DEBUG(std::cout << "Estimated join size " << r << "\n");
+
     return r;
   }
 
