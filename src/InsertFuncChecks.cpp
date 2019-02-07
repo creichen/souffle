@@ -97,9 +97,13 @@ static std::set<std::string> collectJoinVariables(I begin, I end) {
   std::map<AstAtom*, std::set<std::string>> argMap;
   for (auto *atom : make_range(begin, end)) {
     for (auto *arg : atom->getArguments()) {
-      auto *var = dynamic_cast<AstVariable*>(arg);
-      assert(var && "Expecting only variables as arguments");
-      argMap[atom].emplace(var->getName());
+      if (auto *var = dynamic_cast<AstVariable*>(arg)) {
+        argMap[atom].emplace(var->getName());
+      } else {
+        assert((dynamic_cast<AstUnnamedVariable*>(arg) ||
+               dynamic_cast<AstConstant*>(arg))
+               && "Expecting only variables as arguments");
+      }
     }
   }
 
@@ -127,11 +131,23 @@ static std::set<unsigned> collectVarIndices(const AstAtom *atom,
   std::set<unsigned> projIndices;
   for (unsigned i = 0; i < atom->getArity(); ++i) {
     auto *var = dynamic_cast<AstVariable*>(atom->getArgument(i));
-    assert(var && "Expecting only variables as arguments");
-    if (joinVars.count(var->getName()))
+    if (var && joinVars.count(var->getName()))
       projIndices.insert(i);
   }
   return projIndices;
+}
+
+static bool shouldOptimizeClause(const AstClause &cls) {
+  if (cls.getExecutionPlan())
+    return false;
+  for (auto *atom : cls.getAtoms()) {
+    for (auto *arg : atom->getArguments()) {
+      if (!(dynamic_cast<AstVariable*>(arg)
+            || dynamic_cast<AstUnnamedVariable*>(arg)))
+        return false;
+    }
+  }
+  return true;
 }
 
 using ProjDesc = std::pair<std::string /* original relation name */,
@@ -152,9 +168,7 @@ generateProjectionsForProgram(AstProgram *prog) {
 
   for (auto *rel : prog->getRelations()) {
     for (auto *cls : rel->getClauses()) {
-      // optimize only relations with fixed execution plans
-      // TODO: introduce a new annotation for this
-      if (!cls->getExecutionPlan())
+      if (!shouldOptimizeClause(*cls))
         continue;
 
       const auto &atoms = cls->getAtoms();
@@ -489,9 +503,11 @@ getDisjointJoins(const std::vector<AstAtom*> &atoms) {
   for (auto *atom : atoms) {
     eqAtoms.make_set(atom);
     for (auto *arg : atom->getArguments()) {
-      auto *var = dynamic_cast<AstVariable*>(arg);
-      assert(var && "Expecting only variables as arguments");
-      argMap[atom].emplace(var->getName());
+      if (auto *var = dynamic_cast<AstVariable*>(arg)) {
+        argMap[atom].emplace(var->getName());
+      } else {
+        assert(dynamic_cast<AstUnnamedVariable*>(arg) && "Expecting only variables as arguments");
+      }
     }
   }
 
@@ -618,7 +634,7 @@ bool JoinOrderTransformer::transform(AstTranslationUnit &translationUnit) {
 
   for (auto *rel : program->getRelations()) {
     for (auto *clause : rel->getClauses()) {
-      if (clause->getExecutionPlan())
+      if (shouldOptimizeClause(*clause))
         optimizeClause(*clause, projSize);
     }
   }
