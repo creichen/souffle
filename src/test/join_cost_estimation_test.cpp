@@ -8,8 +8,8 @@ class DummyCostModel {
   const std::vector<rel_size_t> &selectivity;
 
 public:
-  DummyCostModel(std::vector<rel_size_t> &size,
-                 std::vector<rel_size_t> &selectivity) :
+  DummyCostModel(const std::vector<rel_size_t> &size,
+                 const std::vector<rel_size_t> &selectivity) :
     relSize(size), selectivity(selectivity) {}
 
   rel_size_t relationSize(unsigned i) const {
@@ -34,32 +34,40 @@ public:
   }
 };
 
-TEST(JoinCostEstimation, JoinOrder1Rels) {
-  std::vector<rel_size_t> size {123};
-  std::vector<rel_size_t> selectivity {123};
-
+static std::vector<unsigned>
+makeOptimizer(const std::vector<rel_size_t> &size,
+              const std::vector<rel_size_t> &selectivity) {
   DummyCostModel m(size, selectivity);
   JoinOrderOptimizer<DummyCostModel>::bitset joinedRels(size.size(), 0);
   joinedRels.set(0, size.size(), true);
   JoinOrderOptimizer<DummyCostModel> opt(m);
   auto revOrder = opt.getReverseJoinOrder(joinedRels);
   std::vector<unsigned> joinOrder(revOrder.rbegin(), revOrder.rend());
+  return joinOrder;
+}
+
+/**
+   Test the trivial case: a join with a single relation
+ */
+TEST(JoinCostEstimation, JoinOrder1Rels) {
+  std::vector<rel_size_t> size {123};
+  std::vector<rel_size_t> selectivity {123};
+
+  auto joinOrder = makeOptimizer(size, selectivity);
 
   EXPECT_EQ(joinOrder.size(), 1);
   EXPECT_EQ(joinOrder[0], 0);
 }
 
 
+/**
+   Test the simple case: a join with two relations
+ */
 TEST(JoinCostEstimation, JoinOrder2Rels) {
   std::vector<rel_size_t> size {10, 100};
   std::vector<rel_size_t> selectivity {10, 10};
 
-  DummyCostModel m(size, selectivity);
-  JoinOrderOptimizer<DummyCostModel>::bitset joinedRels(size.size(), 0);
-  joinedRels.set(0, size.size(), true);
-  JoinOrderOptimizer<DummyCostModel> opt(m);
-  auto revOrder = opt.getReverseJoinOrder(joinedRels);
-  std::vector<unsigned> joinOrder(revOrder.rbegin(), revOrder.rend());
+  auto joinOrder = makeOptimizer(size, selectivity);
 
   EXPECT_EQ(joinOrder[0], 0);
   EXPECT_EQ(joinOrder[1], 1);
