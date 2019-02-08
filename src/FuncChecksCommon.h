@@ -6,6 +6,8 @@
 #include <boost/dynamic_bitset.hpp>
 #include <cmath>
 #include <fstream>
+#include <map>
+#include <iostream>
 
 /** Debug macros
  */

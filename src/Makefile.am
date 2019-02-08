@@ -352,6 +352,12 @@ test_parallel_utils_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/
 test_parallel_utils_test_SOURCES = test/parallel_utils_test.cpp
 test_parallel_utils_test_LDADD = libsouffle.la
 
+# parallel utils implementation
+check_PROGRAMS += test/join_cost_estimation_test
+test_join_cost_estimation_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_join_cost_estimation_test_SOURCES = test/join_cost_estimation_test.cpp
+test_join_cost_estimation_test_LDADD = libsouffle.la
+
 if MPI
 # mpi interface
 check_PROGRAMS += test/mpi_test
