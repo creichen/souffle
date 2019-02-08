@@ -34,6 +34,22 @@ public:
   }
 };
 
+TEST(JoinCostEstimation, JoinOrder1Rels) {
+  std::vector<rel_size_t> size {123};
+  std::vector<rel_size_t> selectivity {123};
+
+  DummyCostModel m(size, selectivity);
+  JoinOrderOptimizer<DummyCostModel>::bitset joinedRels(size.size(), 0);
+  joinedRels.set(0, size.size(), true);
+  JoinOrderOptimizer<DummyCostModel> opt(m);
+  auto revOrder = opt.getReverseJoinOrder(joinedRels);
+  std::vector<unsigned> joinOrder(revOrder.rbegin(), revOrder.rend());
+
+  EXPECT_EQ(joinOrder.size(), 1);
+  EXPECT_EQ(joinOrder[0], 0);
+}
+
+
 TEST(JoinCostEstimation, JoinOrder2Rels) {
   std::vector<rel_size_t> size {10, 100};
   std::vector<rel_size_t> selectivity {10, 10};
