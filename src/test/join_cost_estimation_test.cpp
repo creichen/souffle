@@ -35,8 +35,8 @@ public:
 };
 
 static std::vector<unsigned>
-makeOptimizer(const std::vector<rel_size_t> &size,
-              const std::vector<rel_size_t> &selectivity) {
+getOptJoinOrder(const std::vector<rel_size_t> &size,
+                const std::vector<rel_size_t> &selectivity) {
   DummyCostModel m(size, selectivity);
   JoinOrderOptimizer<DummyCostModel>::bitset joinedRels(size.size(), 0);
   joinedRels.set(0, size.size(), true);
@@ -53,7 +53,7 @@ TEST(JoinCostEstimation, JoinOrder1Rels) {
   std::vector<rel_size_t> size {123};
   std::vector<rel_size_t> selectivity {123};
 
-  auto joinOrder = makeOptimizer(size, selectivity);
+  auto joinOrder = getOptJoinOrder(size, selectivity);
 
   EXPECT_EQ(joinOrder.size(), 1);
   EXPECT_EQ(joinOrder[0], 0);
@@ -67,7 +67,7 @@ TEST(JoinCostEstimation, JoinOrder2Rels) {
   std::vector<rel_size_t> size {10, 100};
   std::vector<rel_size_t> selectivity {10, 10};
 
-  auto joinOrder = makeOptimizer(size, selectivity);
+  auto joinOrder = getOptJoinOrder(size, selectivity);
 
   EXPECT_EQ(joinOrder[0], 0);
   EXPECT_EQ(joinOrder[1], 1);
