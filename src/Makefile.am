@@ -105,6 +105,7 @@ souffle_sources = \
               InterpreterInterface.h                    \
               InterpreterRecords.cpp InterpreterRecords.h \
               InterpreterRelation.h                     \
+              JoinOrderOpt.cpp                          \
               LogStatement.h                            \
               MagicSet.cpp          MagicSet.h          \
               MinimiseProgramTransformer.cpp            \

@@ -77,30 +77,6 @@ generateProjection(const AstRelation &R, const std::set<unsigned> &args) {
   return rel;
 }
 
-static std::set<unsigned> collectVarIndices(const AstAtom *atom,
-                                            const std::set<std::string> &joinVars) {
-  std::set<unsigned> projIndices;
-  for (unsigned i = 0; i < atom->getArity(); ++i) {
-    auto *var = dynamic_cast<AstVariable*>(atom->getArgument(i));
-    if (var && joinVars.count(var->getName()))
-      projIndices.insert(i);
-  }
-  return projIndices;
-}
-
-static bool shouldOptimizeClause(const AstClause &cls) {
-  if (cls.getExecutionPlan())
-    return false;
-  for (auto *atom : cls.getAtoms()) {
-    for (auto *arg : atom->getArguments()) {
-      if (!(dynamic_cast<AstVariable*>(arg)
-            || dynamic_cast<AstUnnamedVariable*>(arg)))
-        return false;
-    }
-  }
-  return true;
-}
-
 
 static std::map<ProjDesc, std::unique_ptr<AstRelation>>
 generateProjectionsForProgram(AstProgram *prog) {

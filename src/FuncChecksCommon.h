@@ -69,6 +69,22 @@ std::set<std::string> collectJoinVariables(I begin, I end) {
 }
 
 
+/**
+   Return true if the clause is considered `fit' for optimization. What `fit' means
+   is depending on the capabilities of the join order optimizer and projection
+   generator.
+ */
+bool shouldOptimizeClause(const souffle::AstClause &cls);
+
+
+/**
+   Return the indices of variables in the atom, starting from 0. One variable
+   may occupy different positions.
+ */
+std::set<unsigned> collectVarIndices(const souffle::AstAtom *atom,
+                                     const std::set<std::string> &vars);
+
+
 /** Helper class to generate subsets of k of elements
     out of sets of n elements */
 template<class I>
