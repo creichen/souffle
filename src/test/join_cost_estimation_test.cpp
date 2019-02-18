@@ -34,7 +34,9 @@ public:
   }
 };
 
-static std::vector<unsigned>
+static std::tuple<std::vector<unsigned>,
+                  rel_size_t /* join result size*/,
+                  float /* join cost */>
 getOptJoinOrder(const std::vector<rel_size_t> &size,
                 const std::vector<rel_size_t> &selectivity) {
   DummyCostModel m(size, selectivity);
@@ -43,7 +45,8 @@ getOptJoinOrder(const std::vector<rel_size_t> &size,
   JoinOrderOptimizer<DummyCostModel> opt(m);
   auto revOrder = opt.getReverseJoinOrder(joinedRels);
   std::vector<unsigned> joinOrder(revOrder.rbegin(), revOrder.rend());
-  return joinOrder;
+  auto cost_size = opt.computeCost(joinedRels);
+  return std::make_tuple(joinOrder, cost_size.second, cost_size.first);
 }
 
 /**
@@ -55,8 +58,8 @@ TEST(JoinCostEstimation, JoinOrder1Rels) {
 
   auto joinOrder = getOptJoinOrder(size, selectivity);
 
-  EXPECT_EQ(joinOrder.size(), 1);
-  EXPECT_EQ(joinOrder[0], 0);
+  EXPECT_EQ(std::get<0>(joinOrder).size(), 1);
+  EXPECT_EQ(std::get<0>(joinOrder)[0], 0);
 }
 
 
@@ -67,12 +70,33 @@ TEST(JoinCostEstimation, JoinOrder2Rels) {
   std::vector<rel_size_t> size {10, 100};
   std::vector<rel_size_t> selectivity {10, 10};
 
+
+
   auto joinOrder = getOptJoinOrder(size, selectivity);
 
-  EXPECT_EQ(joinOrder[0], 0);
-  EXPECT_EQ(joinOrder[1], 1);
+  EXPECT_EQ(std::get<0>(joinOrder)[0], 0);
+  EXPECT_EQ(std::get<0>(joinOrder)[1], 1);
 }
 
+/**
+   Test a join of 3 relations with size 100, 1000, 1000 and
+   selectivities 10, 100, 1000
+ */
+TEST(JoinCostEstimation, JoinOrder3Rels) {
+  std::vector<rel_size_t> size {100, 1000, 1000};
+  std::vector<rel_size_t> selectivity {10, 100, 1000};
+
+  auto joinOrderAndCost = getOptJoinOrder(size, selectivity);
+  EXPECT_EQ(std::get<1>(joinOrderAndCost), 1000);
+  // Expect the cost to be about 100 * log2(1000)
+  EXPECT_LT(100 * std::log2(1000) - 1, std::get<2>(joinOrderAndCost));
+  EXPECT_LT(std::get<2>(joinOrderAndCost), 100 * std::log2(1000) + 1);
+
+  const auto &joinOrder = std::get<0>(joinOrderAndCost);
+  EXPECT_EQ(joinOrder[0], 0);
+  EXPECT_EQ(joinOrder[1], 2);
+  EXPECT_EQ(joinOrder[2], 1);
+}
 
 }
 }
