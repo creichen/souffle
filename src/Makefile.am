@@ -111,6 +111,7 @@ souffle_sources = \
               ParserDriver.cpp      ParserDriver.h      \
               PrecedenceGraph.cpp   PrecedenceGraph.h   \
               ProfileEvent.h                            \
+              ProjectionGenerator.cpp                   \
               ProvenanceTransformer.cpp                 \
               RamAnalysis.h                             \
               RamCondition.h                            \

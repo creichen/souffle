@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AstTransforms.h"
+#include "Global.h"
 #include <set>
 #include <utility>
 #include <numeric>
@@ -20,6 +22,52 @@
 #endif
 
 using FunctionalRelationDesc = std::pair<std::set<unsigned>, unsigned>;
+
+using ProjDesc = std::pair<std::string /* original relation name */,
+                           std::set<unsigned> /* projection indices */>;
+
+
+/**
+   Collect variables that are common to at least two atoms in the range.
+   Return a set containing the names of these variables.
+ */
+template<typename I>
+std::set<std::string> collectJoinVariables(I begin, I end) {
+  using namespace souffle;
+
+  std::set<std::string> joinVars;
+  std::map<AstAtom*, std::set<std::string>> argMap;
+  for (auto *atom : make_range(begin, end)) {
+    for (auto *arg : atom->getArguments()) {
+      if (auto *var = dynamic_cast<AstVariable*>(arg)) {
+        argMap[atom].emplace(var->getName());
+      } else {
+        assert((dynamic_cast<AstUnnamedVariable*>(arg) ||
+               dynamic_cast<AstConstant*>(arg))
+               && "Expecting only variables as arguments");
+      }
+    }
+  }
+
+  for (auto it1 = argMap.begin(), end = argMap.end(); it1 != end; ++it1) {
+    for (auto it2 = std::next(it1); it2 != end; ++it2) {
+      auto &p1 = *it1, &p2 = *it2;
+      assert(p1.first != p2.first);
+
+      std::vector<std::string> commonArgs;
+      std::set_intersection(p1.second.begin(), p1.second.end(),
+                            p2.second.begin(), p2.second.end(),
+                            std::back_inserter(commonArgs));
+
+      std::set<std::string> nextJoinVars;
+      std::set_union(joinVars.begin(), joinVars.end(), commonArgs.begin(), commonArgs.end(),
+                     std::inserter(nextJoinVars, nextJoinVars.begin()));
+      joinVars = std::move(nextJoinVars);
+    }
+  }
+  return joinVars;
+}
+
 
 /** Helper class to generate subsets of k of elements
     out of sets of n elements */
