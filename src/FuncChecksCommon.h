@@ -174,9 +174,6 @@ template<typename T>
 class JoinOrderOptimizer {
 public:
   using bitset = boost::dynamic_bitset<>;
-
-private:
-  T &costModel;
   // using the boost bitset and not the std one because
   // we need the find_first/find_next methods
   struct JoinInfo {
@@ -184,6 +181,9 @@ private:
     unsigned size;
     float cost;
   };
+
+private:
+  T &costModel;
 
   std::map<bitset, JoinInfo> costMap;
 public:
@@ -259,6 +259,18 @@ public:
     while (it != costMap.end()) {
       unsigned i = (it->first & ~it->second.pred).find_first();
       ret.push_back(i);
+      it = costMap.find(it->second.pred);
+    }
+    return ret;
+  }
+
+  std::vector<JoinInfo> getReverseJoinInfo(bitset join) {
+    std::vector<JoinInfo> ret;
+    // force a cost computation, if that was not done already.
+    computeCost(join);
+    auto it = costMap.find(join);
+    while (it != costMap.end()) {
+      ret.push_back(it->second);
       it = costMap.find(it->second.pred);
     }
     return ret;

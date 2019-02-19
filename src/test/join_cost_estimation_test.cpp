@@ -98,5 +98,31 @@ TEST(JoinCostEstimation, JoinOrder3Rels) {
   EXPECT_EQ(joinOrder[2], 1);
 }
 
+/**
+   Validate the join info of 3 relations with sizes 100, 1000, 1000 and
+   selectivities 10, 100, 1000
+ */
+TEST(JoinCostEstimation, JoinInfo) {
+  std::vector<rel_size_t> size {100, 1000, 1000};
+  std::vector<rel_size_t> selectivity {10, 100, 1000};
+  DummyCostModel m(size, selectivity);
+  JoinOrderOptimizer<DummyCostModel>::bitset joinedRels(size.size(), 0);
+  joinedRels.set(0, size.size(), true);
+  JoinOrderOptimizer<DummyCostModel> opt(m);
+  auto revOrder = opt.getReverseJoinInfo(joinedRels);
+
+  EXPECT_EQ(revOrder[0].pred.to_ulong(), 0x5);
+  EXPECT_EQ(revOrder[0].size, 1000);
+  EXPECT_EPS(revOrder[0].cost, 100 * std::log2(1000), 1.0);
+
+  EXPECT_EQ(revOrder[1].pred.to_ulong(), 0x1);
+  EXPECT_EQ(revOrder[1].size, 100);
+  EXPECT_EPS(revOrder[1].cost, 100 * std::log2(1000), 1.0);
+
+  EXPECT_EQ(revOrder[2].pred.to_ulong(), 0);
+  EXPECT_EQ(revOrder[2].size, 100);
+  EXPECT_EQ(revOrder[2].cost, 0);
+
+}
 }
 }

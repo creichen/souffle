@@ -172,6 +172,10 @@ public:
     _EXPECT(p(a, b), LOC) << "expected " << (#p "(" #a "," #b ")") << " where\n\t\t\t" << #a         \
                           << " evaluates to " << toString(a) << "\n\t\t\t" << #b << " evaluates to " \
                           << toString(b)
+#define EXPECT_EPS(x, a, eps) \
+  EXPECT_LT(a - eps, x); \
+  EXPECT_LT(x, a + eps);
+
 
 #define ASSERT_TRUE(a) fatal(a, #a, LOC)
 #define ASSERT_LE(a, b) fatal((a) <= (b), "LE(" #a "," #b ")", LOC)
