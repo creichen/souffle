@@ -98,7 +98,7 @@ public:
 };
 
 
-/** Given a vector of atoms partition it such that
+/** Given a vector of atoms, partition it such that
     atoms in different classes have disjoint argument
     sets.
  */
@@ -162,6 +162,17 @@ getDisjointJoins(const std::vector<AstAtom*> &atoms) {
   return ret;
 }
 
+class SimpleJoinOrderOptimizer : public JoinOrderOptimizer<SimpleCostModel> {
+  SimpleCostModel scm;
+public:
+  // Note: the scm object passed into the JoinOrderOptimizer constructor is
+  // not initialized. This should be OK as long as the JoinOrderOptimizer
+  // constructor does nothing more than storing a reference to scm.
+  SimpleJoinOrderOptimizer(std::vector<AstAtom*> &joinSet,
+                           const std::map<ProjDesc, rel_size_t> &projSize) :
+    JoinOrderOptimizer(scm /*not initialized!!!*/), scm(joinSet, projSize) {}
+};
+
 static bool optimizeClause(AstClause &clause,
                            const std::map<ProjDesc, rel_size_t> &projSize) {
 
@@ -197,11 +208,9 @@ static bool optimizeClause(AstClause &clause,
       continue;
     }
 
-    SimpleCostModel scm(joinSet, projSize);
-    JoinOrderOptimizer<SimpleCostModel> jopt(scm);
-
-    JoinOrderOptimizer<SimpleCostModel>::bitset bits(scm.countAtoms(), 0);
-    bits.set(0, scm.countAtoms(), true);
+    SimpleJoinOrderOptimizer jopt(joinSet, projSize);
+    SimpleJoinOrderOptimizer::bitset bits(joinSet.size(), 0);
+    bits.set(0, joinSet.size(), true);
     const auto &joinOrderR = jopt.getReverseJoinOrder(bits);
 
     std::cout << "\n[";
