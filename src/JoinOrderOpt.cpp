@@ -158,15 +158,23 @@ getDisjointJoins(const std::vector<AstAtom*> &atoms) {
   return ret;
 }
 
-class SimpleJoinOrderOptimizer : public JoinOrderOptimizer<SimpleCostModel> {
+class SimpleJoinOrderOptimizer {
   SimpleCostModel scm;
+  JoinOrderOptimizer<SimpleCostModel> jopt;
+
 public:
-  // Note: the scm object passed into the JoinOrderOptimizer constructor is
-  // not initialized. This should be OK as long as the JoinOrderOptimizer
-  // constructor does nothing more than storing a reference to scm.
+  using bitset = decltype(jopt)::bitset;
   SimpleJoinOrderOptimizer(std::vector<AstAtom*> &joinSet,
                            const std::map<ProjDesc, rel_size_t> &projSize) :
-    JoinOrderOptimizer(scm /*not initialized!!!*/), scm(joinSet, projSize) {}
+    scm(joinSet, projSize), jopt(scm) {}
+
+  std::vector<unsigned> getReverseJoinOrder(bitset join) {
+    return jopt.getReverseJoinOrder(join);
+  }
+
+
+
+
 };
 
 static bool optimizeClause(AstClause &clause,
