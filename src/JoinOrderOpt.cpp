@@ -91,10 +91,6 @@ public:
 
     return r;
   }
-
-  unsigned countAtoms() const {
-    return atoms.size();
-  }
 };
 
 
