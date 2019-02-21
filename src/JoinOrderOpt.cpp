@@ -9,6 +9,7 @@
 #include <fstream>
 #include <cmath>
 #include "FuncChecksCommon.h"
+
 #include "boost/range/irange.hpp"
 #include "boost/pending/disjoint_sets.hpp"
 
@@ -159,25 +160,131 @@ getDisjointJoins(const std::vector<AstAtom*> &atoms) {
 }
 
 class SimpleJoinOrderOptimizer {
+  const std::vector<AstAtom*> &joinSet;
   SimpleCostModel scm;
   JoinOrderOptimizer<SimpleCostModel> jopt;
+  AstProgram *prog;
+  std::map<std::string, rel_size_t> &sizeEstimates;
 
 public:
   using bitset = decltype(jopt)::bitset;
-  SimpleJoinOrderOptimizer(std::vector<AstAtom*> &joinSet,
-                           const std::map<ProjDesc, rel_size_t> &projSize) :
-    scm(joinSet, projSize), jopt(scm) {}
+  SimpleJoinOrderOptimizer(const std::vector<AstAtom*> &joinSet,
+                           const std::map<ProjDesc, rel_size_t> &projSize,
+                           AstProgram *prog,
+                           std::map<std::string, rel_size_t> &sizeEstimates) :
+    joinSet(joinSet),
+    scm(joinSet, projSize),
+    jopt(scm),
+    prog(prog),
+    sizeEstimates(sizeEstimates) {}
 
   std::vector<unsigned> getReverseJoinOrder(bitset join) {
     return jopt.getReverseJoinOrder(join);
   }
 
+  void generateJoinSizeRelations(bitset join,
+                                 const AstClause *origClause);
 
-
-
+  template<typename I>
+  std::unique_ptr<AstRelation>
+  buildClauseFromAtomRange(I begin,
+                           I end,
+                           const AstClause *origClause);
 };
 
+template<typename I>
+std::unique_ptr<AstRelation>
+SimpleJoinOrderOptimizer::buildClauseFromAtomRange(I begin,
+                                                   I end,
+                                                   const AstClause *origClause) {
+  std::map<std::string, AstTypeIdentifier> varTypeMap;
+
+
+  // Collect the types of all the variables
+  std::vector<AstAtom*> currentJoinAtoms;
+
+  for (unsigned i : make_range(begin, end)) {
+    auto *atom = joinSet[i];
+    currentJoinAtoms.push_back(atom);
+    auto *rel = prog->getRelation(atom->getName());
+    for (unsigned i = 0; i < atom->getArity(); ++i) {
+      auto *arg = atom->getArgument(i);
+      AstVariable *var = dynamic_cast<AstVariable*>(arg);
+      if (!var)
+        continue;
+      varTypeMap[var->getName()] = rel->getAttribute(i)->getTypeName();
+    }
+  }
+
+  if (currentJoinAtoms.size() < 2)
+    return nullptr;
+
+  auto joinVars = collectJoinVariables(currentJoinAtoms.begin(),
+                                       currentJoinAtoms.end());
+  std::string name = "real_size";
+  for (auto *atom : currentJoinAtoms) {
+    const auto joinIndices = collectVarIndices(atom, joinVars);
+    name += "_" + atom->getName().getName();
+    for (auto i : joinIndices) {
+      name += "_";
+      name += std::to_string(i);
+    }
+    name += "_join";
+  }
+
+  auto newRelId = AstRelationIdentifier(name);
+  auto newRel = std::make_unique<AstRelation>();
+
+  newRel->setName(newRelId);
+
+
+  // Add attributes to the new relation
+  unsigned i = 0;
+  for (auto &vt : varTypeMap) {
+    auto attr = std::make_unique<AstAttribute>("a_" + std::to_string(i++), vt.second);
+    newRel->addAttribute(std::move(attr));
+  }
+
+  auto newCls = std::make_unique<AstClause>();
+  auto newHead = std::make_unique<AstAtom>(newRelId);
+  for (auto &vt : varTypeMap)
+    newHead->addArgument(std::make_unique<AstVariable>(vt.first));
+  newCls->setHead(std::move(newHead));
+
+  // now add all the selected atoms to the body
+  for (auto atomIdx : make_range(begin, end))
+    newCls->addToBody(std::unique_ptr<AstAtom>(joinSet[atomIdx]->clone()));
+
+  DEBUG(newCls->print(std::cout); std::cout << "\n";);
+  newRel->addClause(std::move(newCls));
+
+  // print out the size
+  auto io = std::make_unique<AstIODirective>();
+  io->setAsPrintSize();
+  newRel->addIODirectives(std::move(io));
+
+  return newRel;
+}
+
+void SimpleJoinOrderOptimizer::generateJoinSizeRelations(bitset join,
+                                                         const AstClause *origClause) {
+  // get join order
+  const auto &revJoinOrder = getReverseJoinOrder(join);
+  if (revJoinOrder.size() <= 2)
+    return;
+
+  DEBUG(std::cout << " ===== Join size relations [" << revJoinOrder.size() << "] \n");
+  for (auto it = std::next(revJoinOrder.rbegin(), 2), end = revJoinOrder.rend(); it != end; ++it) {
+    auto countRel = buildClauseFromAtomRange(revJoinOrder.rbegin(), it, origClause);
+    if (prog->getRelation(countRel->getName()))
+      continue;
+    prog->appendRelation(std::move(countRel));
+  }
+}
+
+
 static bool optimizeClause(AstClause &clause,
+                           AstProgram &program,
                            const std::map<ProjDesc, rel_size_t> &projSize) {
 
   const auto &atoms = clause.getAtoms();
@@ -212,10 +319,13 @@ static bool optimizeClause(AstClause &clause,
       continue;
     }
 
-    SimpleJoinOrderOptimizer jopt(joinSet, projSize);
+    std::map<std::string, rel_size_t> placeholder;
+    SimpleJoinOrderOptimizer jopt(joinSet, projSize, &program, placeholder);
     SimpleJoinOrderOptimizer::bitset bits(joinSet.size(), 0);
     bits.set(0, joinSet.size(), true);
     const auto &joinOrderR = jopt.getReverseJoinOrder(bits);
+
+    jopt.generateJoinSizeRelations(bits, &clause);
 
     std::cout << "\n[";
     for (auto i : make_range(joinOrderR.rbegin(), joinOrderR.rend())) {
@@ -263,7 +373,7 @@ bool JoinOrderTransformer::transform(AstTranslationUnit &translationUnit) {
   for (auto *rel : program->getRelations()) {
     for (auto *clause : rel->getClauses()) {
       if (shouldOptimizeClause(*clause))
-        optimizeClause(*clause, projSize);
+        optimizeClause(*clause, *program, projSize);
     }
   }
 
