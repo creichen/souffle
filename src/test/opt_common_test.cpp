@@ -60,6 +60,23 @@ TEST(OptCommon, choose2from3int) {
   EXPECT_EQ(result, expected);
 }
 
+TEST(OptCommon, choose0from3int) {
+  std::vector<std::vector<unsigned>> result;
+  choose<unsigned> choose0from3(10, 13, 0);
+
+  do {
+    std::vector<unsigned> tmp;
+    for (auto it = choose0from3.begin(), end = choose0from3.end(); it != end; ++it) {
+      tmp.push_back(*it);
+    }
+    result.emplace_back(std::move(tmp));
+  } while(choose0from3.next());
+
+  EXPECT_EQ(result.size(), nChooseK(3, 0));
+  std::vector<std::vector<unsigned>> expected{{}};
+  EXPECT_EQ(result, expected);
+}
+
 
 
 } // namespace test

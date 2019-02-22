@@ -101,6 +101,9 @@ public:
   }
 
   bool next() {
+    if (k == 0)
+      return false;
+
     unsigned pos = k-1;
 
     ++its[pos];
