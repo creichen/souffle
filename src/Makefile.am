@@ -360,6 +360,12 @@ test_join_cost_estimation_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_sr
 test_join_cost_estimation_test_SOURCES = test/join_cost_estimation_test.cpp
 test_join_cost_estimation_test_LDADD = libsouffle.la
 
+# parallel utils implementation
+check_PROGRAMS += test/opt_common_test
+test_opt_common_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_opt_common_test_SOURCES = test/opt_common_test.cpp
+test_opt_common_test_LDADD = libsouffle.la
+
 if MPI
 # mpi interface
 check_PROGRAMS += test/mpi_test

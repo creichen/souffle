@@ -1,0 +1,43 @@
+#include "FuncChecksCommon.h"
+#include "test.h"
+
+#include <vector>
+#include <iterator>
+
+namespace souffle {
+namespace test {
+
+static unsigned nChooseK(unsigned n, unsigned k) {
+  if (k == 0 || k == n)
+    return 1;
+  return nChooseK(n - 1, k - 1) + nChooseK(n - 1, k);
+}
+
+/*
+   Verify that choosing 2 out of 3 from a range produces
+   the expected iterators and result size.
+ */
+TEST(OptCommon, choose2from3) {
+  std::array<unsigned, 3> v;
+  std::iota(v.begin(), v.end(), 10);
+
+  std::vector<std::vector<unsigned>> result;
+  choose<decltype(v)::iterator> choose2from3(v.begin(), v.end(), 2);
+
+  do {
+    EXPECT_EQ(std::distance(choose2from3.begin(), choose2from3.end()), 2);
+    std::vector<unsigned> tmp;
+    for (auto it = choose2from3.begin(), end = choose2from3.end(); it != end; ++it) {
+      tmp.push_back(**it);
+    }
+    result.emplace_back(std::move(tmp));
+  } while(choose2from3.next());
+
+  EXPECT_EQ(result.size(), nChooseK(3, 2));
+  std::vector<std::vector<unsigned>> expected{{10, 11}, {10, 12}, {11, 12}};
+  EXPECT_EQ(result, expected);
+}
+
+
+} // namespace test
+} // namespace souffle
