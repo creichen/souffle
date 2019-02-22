@@ -141,7 +141,7 @@ class subset {
   I ibegin, iend;
 public:
   subset(I ibegin, I iend, unsigned startSize =  1) :
-    n(std::distance(ibegin, iend)),
+    n(iend - ibegin),
     i(startSize),
     c(ibegin, iend, startSize),
     ibegin(ibegin), iend(iend) {}

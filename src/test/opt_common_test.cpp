@@ -120,5 +120,27 @@ TEST(OptCommon, subset3) {
   EXPECT_EQ(result, expected);
 }
 
+/**
+   Verify that subset generation works with integer ranges
+ */
+TEST(OptCommon, subset3int) {
+  subset<unsigned> subset3(0, 3, 1 /*exclude the empty subset*/);
+  std::vector<std::vector<unsigned>> result;
+
+  do {
+    std::vector<unsigned> tmp;
+    for (auto it = subset3.begin(), end = subset3.end(); it != end; ++it) {
+      tmp.push_back(*it);
+    }
+    result.emplace_back(std::move(tmp));
+  } while(subset3.next());
+
+    EXPECT_EQ(result.size(), 7);
+  std::vector<std::vector<unsigned>> expected{
+    {0}, {1}, {2},
+    {0, 1}, {0, 2}, {1, 2}, {0, 1, 2}};
+  EXPECT_EQ(result, expected);
+}
+
 } // namespace test
 } // namespace souffle
