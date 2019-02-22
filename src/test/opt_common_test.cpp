@@ -38,6 +38,29 @@ TEST(OptCommon, choose2from3) {
   EXPECT_EQ(result, expected);
 }
 
+/*
+   Verify that choosing 2 out of 3 from an integer range
+   generates the correct values
+ */
+TEST(OptCommon, choose2from3int) {
+  std::vector<std::vector<unsigned>> result;
+  choose<unsigned> choose2from3(10, 13, 2);
+
+  do {
+    EXPECT_EQ(std::distance(choose2from3.begin(), choose2from3.end()), 2);
+    std::vector<unsigned> tmp;
+    for (auto it = choose2from3.begin(), end = choose2from3.end(); it != end; ++it) {
+      tmp.push_back(*it);
+    }
+    result.emplace_back(std::move(tmp));
+  } while(choose2from3.next());
+
+  EXPECT_EQ(result.size(), nChooseK(3, 2));
+  std::vector<std::vector<unsigned>> expected{{10, 11}, {10, 12}, {11, 12}};
+  EXPECT_EQ(result, expected);
+}
+
+
 
 } // namespace test
 } // namespace souffle
