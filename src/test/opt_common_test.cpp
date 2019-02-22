@@ -95,7 +95,30 @@ TEST(OptCommon, choose5from5int) {
   EXPECT_EQ(result, expected);
 }
 
+/**
+   Verify that for a range of length n all the 2^n subsets of iterators
+   pointing insided that range are generated.
+ */
+TEST(OptCommon, subset3) {
+  std::array<unsigned, 3> v;
+  std::iota(v.begin(), v.end(), 10);
+  std::vector<std::vector<unsigned>> result;
+  subset<decltype(v)::iterator> subset3(v.begin(), v.end(), 0);
 
+  do {
+    std::vector<unsigned> tmp;
+    for (auto it = subset3.begin(), end = subset3.end(); it != end; ++it) {
+      tmp.push_back(**it);
+    }
+    result.emplace_back(std::move(tmp));
+  } while(subset3.next());
+
+  EXPECT_EQ(result.size(), 8);
+  std::vector<std::vector<unsigned>> expected{
+    {}, {10}, {11}, {12},
+    {10, 11}, {10, 12}, {11, 12}, {10, 11, 12}};
+  EXPECT_EQ(result, expected);
+}
 
 } // namespace test
 } // namespace souffle

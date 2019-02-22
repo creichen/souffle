@@ -140,8 +140,11 @@ class subset {
   choose<I> c;
   I ibegin, iend;
 public:
-  subset(I ibegin, I iend) : n(std::distance(ibegin, iend)), i(1), c(ibegin, iend, 1), ibegin(ibegin), iend(iend) {
-  }
+  subset(I ibegin, I iend, unsigned startSize =  1) :
+    n(std::distance(ibegin, iend)),
+    i(startSize),
+    c(ibegin, iend, startSize),
+    ibegin(ibegin), iend(iend) {}
 
   bool next() {
     bool isNext = c.next();
