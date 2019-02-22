@@ -78,6 +78,24 @@ TEST(OptCommon, choose0from3int) {
 }
 
 
+TEST(OptCommon, choose5from5int) {
+  std::vector<std::vector<int>> result;
+  choose<int> choose5from5(-2, 3, 5);
+
+  do {
+    std::vector<int> tmp;
+    for (auto it = choose5from5.begin(), end = choose5from5.end(); it != end; ++it) {
+      tmp.push_back(*it);
+    }
+    result.emplace_back(std::move(tmp));
+  } while(choose5from5.next());
+
+  EXPECT_EQ(result.size(), nChooseK(5, 5));
+  std::vector<std::vector<int>> expected{{-2, -1, 0, 1, 2}};
+  EXPECT_EQ(result, expected);
+}
+
+
 
 } // namespace test
 } // namespace souffle
