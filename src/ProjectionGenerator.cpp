@@ -100,16 +100,15 @@ generateProjectionsForProgram(AstProgram *prog) {
       auto joinVars = collectJoinVariables(atoms.begin(), atoms.end());
 
       for (auto *atom : atoms) {
-        const auto &projIndices = collectVarIndices(atom, joinVars);
-        if (projIndices.empty())
+        if (atom->getArity() == 0)
           continue;
 
-        auto *relToProj = prog->getRelation(atom->getName());
-        generateProj(relToProj, projIndices);
-
-        std::set<unsigned> allIndices(boost::irange(atom->getArity()).begin(),
-                                      boost::irange(atom->getArity()).end());
-        generateProj(relToProj, allIndices);
+        subset<unsigned> subsetGen(0, atom->getArity());
+        do {
+          std::set<unsigned> projIndices(subsetGen.begin(), subsetGen.end());
+          auto *relToProj = prog->getRelation(atom->getName());
+          generateProj(relToProj, projIndices);
+        } while (subsetGen.next());
       }
     }
   }
@@ -135,6 +134,8 @@ bool ProjectionTransformer::transform(AstTranslationUnit &translationUnit) {
     projMapFile << "\n";
     translationUnit.getProgram()->appendRelation(std::move(p.second));
   }
+
+  DEBUG(std::cout << "Generated " << projections.size() << " projection relations.\n";);
 
   return false;
 }

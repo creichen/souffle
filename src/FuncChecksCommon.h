@@ -144,7 +144,7 @@ public:
     n(iend - ibegin),
     i(startSize),
     c(ibegin, iend, startSize),
-    ibegin(ibegin), iend(iend) {}
+    ibegin(ibegin), iend(iend) { assert(startSize <= n); }
 
   bool next() {
     bool isNext = c.next();
