@@ -103,8 +103,7 @@ TEST(OptCommon, subset3) {
   std::array<unsigned, 3> v;
   std::iota(v.begin(), v.end(), 10);
   std::vector<std::vector<unsigned>> result;
-  subset<decltype(v)::iterator> subset3(v.begin(), v.end(), 0);
-
+  auto subset3 = make_subset_gen(v.begin(), v.end(), 0);
   do {
     std::vector<unsigned> tmp;
     for (auto it = subset3.begin(), end = subset3.end(); it != end; ++it) {
@@ -124,7 +123,7 @@ TEST(OptCommon, subset3) {
    Verify that subset generation works with integer ranges
  */
 TEST(OptCommon, subset3int) {
-  subset<unsigned> subset3(0, 3, 1 /*exclude the empty subset*/);
+  auto subset3 = make_subset_gen(0, 3, 1 /*exclude the empty subset*/);
   std::vector<std::vector<unsigned>> result;
 
   do {
@@ -135,10 +134,10 @@ TEST(OptCommon, subset3int) {
     result.emplace_back(std::move(tmp));
   } while(subset3.next());
 
-    EXPECT_EQ(result.size(), 7);
+  EXPECT_EQ(result.size(), 7);
   std::vector<std::vector<unsigned>> expected{
-    {0}, {1}, {2},
-    {0, 1}, {0, 2}, {1, 2}, {0, 1, 2}};
+                {0}, {1}, {2},
+                {0, 1}, {0, 2}, {1, 2}, {0, 1, 2}};
   EXPECT_EQ(result, expected);
 }
 

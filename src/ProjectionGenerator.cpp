@@ -103,7 +103,7 @@ generateProjectionsForProgram(AstProgram *prog) {
         if (atom->getArity() == 0)
           continue;
 
-        subset<unsigned> subsetGen(0, atom->getArity());
+        auto subsetGen = make_subset_gen(0, atom->getArity());
         do {
           std::set<unsigned> projIndices(subsetGen.begin(), subsetGen.end());
           auto *relToProj = prog->getRelation(atom->getName());

@@ -10,7 +10,7 @@
 #include <fstream>
 #include <map>
 #include <iostream>
-
+#include <type_traits>
 /** Debug macros
  */
 #ifndef NDEBUG
@@ -171,6 +171,13 @@ public:
   iterator end() { return c.end(); }
 };
 
+template<typename I, typename J>
+subset<typename std::common_type<I, J>::type>
+make_subset_gen(I begin, J end, unsigned startSize = 1) {
+  // Use common_type to support different integer type as inputs,
+  // e.g. unsigned and size_t.
+  return subset<typename std::common_type<I, J>::type>(begin, end, startSize);
+}
 
 /**
    A join order optimizer using dynamic programming:
