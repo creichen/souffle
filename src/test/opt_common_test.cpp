@@ -22,7 +22,7 @@ TEST(OptCommon, choose2from3) {
   std::iota(v.begin(), v.end(), 10);
 
   std::vector<std::vector<unsigned>> result;
-  choose<decltype(v)::iterator> choose2from3(v.begin(), v.end(), 2);
+  auto choose2from3 = make_choose_gen(v.begin(), v.end(), 2);
 
   do {
     EXPECT_EQ(std::distance(choose2from3.begin(), choose2from3.end()), 2);
@@ -44,7 +44,7 @@ TEST(OptCommon, choose2from3) {
  */
 TEST(OptCommon, choose2from3int) {
   std::vector<std::vector<unsigned>> result;
-  choose<unsigned> choose2from3(10, 13, 2);
+  auto choose2from3 = make_choose_gen(10, 13, 2);
 
   do {
     EXPECT_EQ(std::distance(choose2from3.begin(), choose2from3.end()), 2);
@@ -62,7 +62,7 @@ TEST(OptCommon, choose2from3int) {
 
 TEST(OptCommon, choose0from3int) {
   std::vector<std::vector<unsigned>> result;
-  choose<unsigned> choose0from3(10, 13, 0);
+  auto choose0from3 = make_choose_gen(10, 13, 0);
 
   do {
     std::vector<unsigned> tmp;
@@ -80,7 +80,7 @@ TEST(OptCommon, choose0from3int) {
 
 TEST(OptCommon, choose5from5int) {
   std::vector<std::vector<int>> result;
-  choose<int> choose5from5(-2, 3, 5);
+  auto choose5from5 = make_choose_gen(-2, 3, 5);
 
   do {
     std::vector<int> tmp;

@@ -133,6 +133,11 @@ public:
   iterator end() { return its.end(); }
 };
 
+template<typename I>
+choose<I> make_choose_gen(I begin, I end, unsigned k) {
+  return choose<I>(begin, end, k);
+}
+
 /** Generator for all the non-empty subsets of a given set */
 template<class I>
 class subset {

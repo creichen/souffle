@@ -62,7 +62,7 @@ std::map<FunctionalRelationDesc, std::unique_ptr<AstRelation>> generateFuncTestP
   std::map<FunctionalRelationDesc, std::unique_ptr<AstRelation>> clauses;
 
   for (unsigned n = nArgs - 1; n > 0; --n) {
-    auto choice = choose<decltype(indices)::iterator>(indices.begin(), indices.end(), n);
+    auto choice = make_choose_gen(indices.begin(), indices.end(), n);
     do {
       auto complement = std::set<unsigned>(indices.begin(), indices.end());
 
@@ -145,7 +145,7 @@ std::map<FunctionalRelationDesc, std::unique_ptr<AstRelation>> generateFuncTestP
     unsigned tgt = entry.first.second;
     auto &rel = entry.second;
 
-    auto argSubsetGen = choose<decltype(entry.first.first)::iterator>(args.begin(), args.end(), args.size() - 1);
+    auto argSubsetGen = make_choose_gen(args.begin(), args.end(), args.size() - 1);
     do {
       std::set<unsigned> argSubset;
       for (auto it = argSubsetGen.begin(), end = argSubsetGen.end(); it != end; ++it) {
