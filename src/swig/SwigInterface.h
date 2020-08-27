@@ -26,6 +26,42 @@
 
 #pragma once
 
+class SWIGSouffleRelation;
+
+class SWIGSouffleTuple {
+    friend class SWIGSouffleRelation;
+    souffle::tuple tpl;
+    SWIGSouffleTuple(const SWIGSouffleRelation *rel);
+
+public:
+    void add(long v) {
+        tpl << (souffle::RamSigned) v;
+    }
+
+    void add(const std::string &s) {
+        tpl << s;
+    }
+};
+
+
+class SWIGSouffleRelation {
+    friend class SWIGSouffleTuple;
+    friend class SWIGSouffleProgram;
+
+    souffle::Relation *rel;
+    SWIGSouffleRelation(souffle::Relation *rel) : rel(rel) {}
+
+public:
+    void add(const SWIGSouffleTuple &tpl) {
+        rel->insert(tpl.tpl);
+    }
+
+    SWIGSouffleTuple makeTuple() {
+        return SWIGSouffleTuple(this);
+    }
+};
+
+
 /**
  * Abstract base class for generated Datalog programs
  */
@@ -83,7 +119,14 @@ public:
     void dumpOutputs(std::ostream& out = std::cout) {
         program->dumpOutputs(out);
     }
+
+
+    SWIGSouffleRelation getRelation(const std::string &name) {
+        return SWIGSouffleRelation(program->getRelation(name));
+    }
 };
+
+
 
 /**
  * Creates an instance of a SWIG souffle::SouffleProgram that can be called within a program of a supported

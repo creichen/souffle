@@ -24,3 +24,5 @@ SWIGSouffleProgram* newInstance(const std::string& name) {
     auto* p = new SWIGSouffleProgram(prog);
     return p;
 }
+
+SWIGSouffleTuple::SWIGSouffleTuple(const SWIGSouffleRelation *rel) : tpl(rel->rel) {}
