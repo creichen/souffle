@@ -131,7 +131,7 @@ then
   done
 
   cd "$TMP_DIR"
-  swig -c++ -"$SWIGLANG" "SwigInterface.i"
+  swig -c++ -"$SWIGLANG" -package swig "SwigInterface.i"
 
   # Checks input language and compiles files with local python3 config or local java_home config
   if [ "$SWIGLANG" = "python" ]
