@@ -34,7 +34,7 @@ class SWIGSouffleTuple {
     SWIGSouffleTuple(const SWIGSouffleRelation *rel);
 
 public:
-    void add(long v) {
+    void add(long long v) {
         tpl << (souffle::RamSigned) v;
     }
 
@@ -52,12 +52,12 @@ class SWIGSouffleRelation {
     SWIGSouffleRelation(souffle::Relation *rel) : rel(rel) {}
 
 public:
-    void add(const SWIGSouffleTuple &tpl) {
-        rel->insert(tpl.tpl);
+    void add(const SWIGSouffleTuple *tpl) {
+        rel->insert(tpl->tpl);
     }
 
-    SWIGSouffleTuple makeTuple() {
-        return SWIGSouffleTuple(this);
+    SWIGSouffleTuple *makeTuple() {
+        return new SWIGSouffleTuple(this);
     }
 };
 
@@ -121,8 +121,11 @@ public:
     }
 
 
-    SWIGSouffleRelation getRelation(const std::string &name) {
-        return SWIGSouffleRelation(program->getRelation(name));
+    SWIGSouffleRelation *getRelation(const std::string &name) {
+        auto *rel = program->getRelation(name);
+        if (rel)
+            return new SWIGSouffleRelation(program->getRelation(name));
+        return nullptr;
     }
 };
 
