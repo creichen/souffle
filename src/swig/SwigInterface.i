@@ -15,13 +15,16 @@
  *
  ***********************************************************************/
 
-%module SwigInterface 
-%include "std_string.i" 
-%include "std_map.i" 
+%module SwigInterface
+%include "std_string.i"
+%include "std_map.i"
+%include "arrays_java.i"
+%include "various.i"
 %include<std_vector.i>
 namespace std {
     %template(map_string_string) map<string, string>;
 }
+%apply char ** STRING_ARRAY { const char *s0[], const char *s4[] };
 
 %{
 #include "SwigInterface.h"
@@ -35,6 +38,7 @@ souffle::Relation* rel;
 souffle::Relation* rel_out;
 %}
 
-%include "SwigInterface.h" 
+%include "SwigInterface.h"
 %newobject newInstance;
+
 SWIGSouffleProgram* newInstance(const std::string& name);

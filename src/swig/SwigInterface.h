@@ -43,7 +43,6 @@ public:
     }
 };
 
-
 class SWIGSouffleRelation {
     friend class SWIGSouffleTuple;
     friend class SWIGSouffleProgram;
@@ -52,12 +51,30 @@ class SWIGSouffleRelation {
     SWIGSouffleRelation(souffle::Relation *rel) : rel(rel) {}
 
 public:
-    void add(const SWIGSouffleTuple *tpl) {
-        rel->insert(tpl->tpl);
+    void add(const SWIGSouffleTuple &tpl) {
+        rel->insert(tpl.tpl);
     }
 
-    SWIGSouffleTuple *makeTuple() {
-        return new SWIGSouffleTuple(this);
+    void add(const std::string &s0,
+             long long l1,
+             long long l2,
+             long long l3,
+             const std::string &s4) {
+        souffle::tuple t(rel);
+        t << s0 << (souffle::RamSigned) l1 << (souffle::RamSigned) l2 << (souffle::RamSigned) l3 << s4;
+        rel->insert(t);
+    }
+
+  void add(const char *s0[], const long long l1[], const long long l2[], const long long l3[], const char *s4[],
+           int n) {
+      for (int i = 0; i < n; ++i) {
+        add(s0[i], l1[i], l2[i], l3[i], s4[i]);
+      }
+  }
+
+
+    SWIGSouffleTuple makeTuple() {
+        return SWIGSouffleTuple(this);
     }
 };
 
@@ -122,7 +139,7 @@ public:
 
 
     SWIGSouffleRelation *getRelation(const std::string &name) {
-        auto *rel = program->getRelation(name);
+        souffle::Relation *rel = program->getRelation(name);
         if (rel)
             return new SWIGSouffleRelation(program->getRelation(name));
         return nullptr;
