@@ -147,8 +147,8 @@ then
       error "JAVA_HOME environment variable has not been set"
     fi
 
-    $CXX -fPIC -c -D__EMBEDDED_SOUFFLE__ SwigInterface.cpp SwigInterface_wrap.cxx $dir/$exe.cpp -I$JAVADIR -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
-    $CXX -shared SwigInterface.o SwigInterface_wrap.o $exe.o -o libSwigInterface.so -lstdc++
+    $CXX $CXXFLAGS $CPPFLAGS -fPIC -c -D__EMBEDDED_SOUFFLE__ SwigInterface.cpp SwigInterface_wrap.cxx $dir/$exe.cpp -I$JAVADIR -I$JAVADIR/include -I$JAVADIR/include/linux  -I$JAVADIR/include/darwin -I/usr/lib/x86_64-linux-gnu/ -I$HEADER_DIR 2>&1
+    $CXX $CXXFLAGS $CPPFLAGS -shared SwigInterface.o SwigInterface_wrap.o $exe.o -o libSwigInterface.so -lstdc++ $LIBS
   fi
 
   # move generated files to same directory as cpp file

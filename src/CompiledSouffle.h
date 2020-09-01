@@ -32,11 +32,10 @@
 #include "souffle/Table.h"
 #include "souffle/Util.h"
 #include "souffle/WriteStream.h"
-#ifndef __EMBEDDED_SOUFFLE__
 #include "souffle/CompiledOptions.h"
 #include "souffle/Logger.h"
 #include "souffle/ProfileEvent.h"
-#endif
+
 #include <array>
 #include <atomic>
 #include <cassert>
