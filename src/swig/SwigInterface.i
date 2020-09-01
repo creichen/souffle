@@ -25,6 +25,7 @@ namespace std {
     %template(map_string_string) map<string, string>;
 }
 %apply char ** STRING_ARRAY { const char *s0[], const char *s4[] };
+%apply unsigned char * NIOBUFFER { unsigned char *buf };
 
 %{
 #include "SwigInterface.h"

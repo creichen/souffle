@@ -72,6 +72,43 @@ public:
       }
   }
 
+    private:
+        struct tuple5 {
+                int s0len;
+                int s4len;
+                long long l1;
+                long long l2;
+                long long l3;
+        };
+    public:
+        void readTuplesFromBuffer(unsigned char *buf) {
+            auto &symbolTable = rel->getSymbolTable();
+            // This is a scoped lock to the symbol table. It is performance-critical
+            // that we acquire this lock only once for a batch of inserts, rather
+            // than for every insert.
+            auto lock = symbolTable.acquireLock();
+            souffle::tuple tpl(rel);
+
+            static_assert(sizeof(tuple5) == 32, "tuple5 struct should be packed");
+            do {
+                tuple5 header = *(tuple5*)buf;
+                if (header.s0len < 0)
+                    break;
+
+                const char *s0 = (const char*) buf + sizeof(tuple5);
+                const char *s4 = (const char*) buf + sizeof(tuple5) + header.s0len;
+
+                tpl[0] = symbolTable.unsafeLookup(s0);
+                tpl[4] = symbolTable.unsafeLookup(s4);
+                tpl[1] = header.l1;
+                tpl[2] = header.l2;
+                tpl[3] = header.l3;
+                rel->insert(tpl);
+
+                // std::cerr<< "(" << s0 << ", " << header.l1 << ", " << header.l2 << ", " << header.l3 << ", " << s4 << ")";
+                buf += sizeof(tuple5) + header.s0len + header.s4len;
+            } while (true);
+        }
 
     SWIGSouffleTuple makeTuple() {
         return SWIGSouffleTuple(this);
