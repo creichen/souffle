@@ -174,13 +174,19 @@ public:
         program->dumpOutputs(out);
     }
 
-
+    /**
+     * Look up a relation by name.
+     */
     SWIGSouffleRelation *getRelation(const std::string &name) {
         souffle::Relation *rel = program->getRelation(name);
         if (rel)
             return new SWIGSouffleRelation(program->getRelation(name));
         return nullptr;
     }
+
+        void setNumThreads(int n) {
+            program->setNumThreads(n);
+        }
 };
 
 
