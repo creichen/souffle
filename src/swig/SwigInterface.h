@@ -29,90 +29,91 @@
 class SWIGSouffleRelation;
 
 class SWIGSouffleTuple {
-    friend class SWIGSouffleRelation;
-    souffle::tuple tpl;
-    SWIGSouffleTuple(const SWIGSouffleRelation *rel);
+  friend class SWIGSouffleRelation;
+  souffle::tuple tpl;
+  SWIGSouffleTuple(const SWIGSouffleRelation *rel);
 
 public:
-    void add(long long v) {
-        tpl << (souffle::RamSigned) v;
-    }
+  void add(long long v) {
+    tpl << (souffle::RamSigned) v;
+  }
 
-    void add(const std::string &s) {
-        tpl << s;
-    }
+  void add(const std::string &s) {
+    tpl << s;
+  }
 };
 
 class SWIGSouffleRelation {
-    friend class SWIGSouffleTuple;
-    friend class SWIGSouffleProgram;
+  friend class SWIGSouffleTuple;
+  friend class SWIGSouffleProgram;
 
-    souffle::Relation *rel;
-    SWIGSouffleRelation(souffle::Relation *rel) : rel(rel) {}
+  souffle::Relation *rel;
+  SWIGSouffleRelation(souffle::Relation *rel) : rel(rel) {}
 
 public:
-    void add(const SWIGSouffleTuple &tpl) {
-        rel->insert(tpl.tpl);
-    }
+  void add(const SWIGSouffleTuple &tpl) {
+    rel->insert(tpl.tpl);
+  }
 
-    void add(const std::string &s0,
-             long long l1,
-             long long l2,
-             long long l3,
-             const std::string &s4) {
-        souffle::tuple t(rel);
-        t << s0 << (souffle::RamSigned) l1 << (souffle::RamSigned) l2 << (souffle::RamSigned) l3 << s4;
-        rel->insert(t);
-    }
+  void add(const std::string &s0,
+           long long l1,
+           long long l2,
+           long long l3,
+           const std::string &s4) {
+    souffle::tuple t(rel);
+    t << s0 << (souffle::RamSigned) l1 << (souffle::RamSigned) l2 << (souffle::RamSigned) l3 << s4;
+    rel->insert(t);
+  }
 
   void add(const char *s0[], const long long l1[], const long long l2[], const long long l3[], const char *s4[],
            int n) {
-      for (int i = 0; i < n; ++i) {
-        add(s0[i], l1[i], l2[i], l3[i], s4[i]);
-      }
+    for (int i = 0; i < n; ++i) {
+      add(s0[i], l1[i], l2[i], l3[i], s4[i]);
+    }
   }
 
-    private:
-        struct tuple5 {
-                int s0len;
-                int s4len;
-                long long l1;
-                long long l2;
-                long long l3;
-        };
-    public:
-        void readTuplesFromBuffer(unsigned char *buf) {
-            auto &symbolTable = rel->getSymbolTable();
-            // This is a scoped lock to the symbol table. It is performance-critical
-            // that we acquire this lock only once for a batch of inserts, rather
-            // than for every insert.
-            auto lock = symbolTable.acquireLock();
-            souffle::tuple tpl(rel);
+public:
+  void readTuplesFromBuffer(unsigned char *buf) {
+    auto &symbolTable = rel->getSymbolTable();
+    // This is a scoped lock to the symbol table. It is performance-critical
+    // that we acquire this lock only once for a batch of inserts, rather
+    // than for every insert.
+    auto lock = symbolTable.acquireLock();
+    souffle::tuple tpl(rel);
 
-            static_assert(sizeof(tuple5) == 32, "tuple5 struct should be packed");
-            do {
-                tuple5 header = *(tuple5*)buf;
-                if (header.s0len < 0)
-                    break;
+    // std::cerr << "inserting into relation " << rel->getName() << "\n";
+    do {
+      int arity = *(int *)buf;
+      buf += sizeof(int);
 
-                const char *s0 = (const char*) buf + sizeof(tuple5);
-                const char *s4 = (const char*) buf + sizeof(tuple5) + header.s0len;
+      if (arity < 0) {
+        // we reached the end of the buffer
+        break;
+      }
 
-                tpl[0] = symbolTable.unsafeLookup(s0);
-                tpl[4] = symbolTable.unsafeLookup(s4);
-                tpl[1] = header.l1;
-                tpl[2] = header.l2;
-                tpl[3] = header.l3;
-                rel->insert(tpl);
-
-                // std::cerr<< "(" << s0 << ", " << header.l1 << ", " << header.l2 << ", " << header.l3 << ", " << s4 << ")";
-                buf += sizeof(tuple5) + header.s0len + header.s4len;
-            } while (true);
+      for (int i = 0; i < arity; ++i) {
+        int len = *((int *) buf);
+        buf += sizeof(int);
+        if (len < 0) {
+          // this is a long
+          long long *val = (long long *) buf;
+          tpl[i] = *val;
+          buf += sizeof(long long);
+          // std::cerr << "long long: " << *val << "\n";
+        } else {
+          // this is a string
+          tpl[i] = symbolTable.unsafeLookup((const char *) buf);
+          // std::cerr << "string: " << buf << "\n";
+          buf += len;
         }
+      }
+      rel->insert(tpl);
+    } while (true);
+  }
 
-    SWIGSouffleTuple makeTuple() {
-        return SWIGSouffleTuple(this);
-    }
+  SWIGSouffleTuple makeTuple() {
+    return SWIGSouffleTuple(this);
+  }
 };
 
 
