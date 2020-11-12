@@ -32,7 +32,7 @@ class ReadStreamSQLite : public ReadStream {
 public:
     ReadStreamSQLite(const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable)
             : ReadStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("filename")),
-              relationName(rwOperation.get("name")) {
+              relationName((rwOperation.has("table_prefix") ? rwOperation.get("table_prefix") : "") + rwOperation.get("name")) {
         openDB();
         checkTableExists();
         prepareSelectStatement();
@@ -152,7 +152,7 @@ protected:
                 "Required table or view does not exist in " + dbFilename + " for relation " + relationName);
     }
     const std::string& dbFilename;
-    const std::string& relationName;
+    const std::string relationName;
     sqlite3_stmt* selectStatement = nullptr;
     sqlite3* db = nullptr;
 };

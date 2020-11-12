@@ -244,6 +244,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << R"_(if (!inputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
+                // MetaDL specific
+                out << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
+                out << "directiveMap[\"dbname\"] == \"__internal__\") {";
+                out << R"_(directiveMap["dbname"] = internalDB;)_";
+                out << R"_(directiveMap["filename"] = internalDB;)_";
+                out << "}\n";
+                out << R"_(if (!tablePrefix.empty() && directiveMap["IO"] == "sqlite") { )_";
+                out << R"_(directiveMap["table_prefix"] = tablePrefix;)_";
+                out << "}\n";
+                // MetaDL specific - end
                 out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
                 out << "rwOperation, symTable, recordTable";
@@ -260,6 +270,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << R"_(if (!outputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
+                // MetaDL specific
+                out << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
+                out << "directiveMap[\"dbname\"] == \"__internal__\") {";
+                out << R"_(directiveMap["dbname"] = internalDB;)_";
+                out << R"_(directiveMap["filename"] = internalDB;)_";
+                out << "}\n";
+                out << R"_(if (!tablePrefix.empty() && directiveMap["IO"] == "sqlite") { )_";
+                out << R"_(directiveMap["table_prefix"] = tablePrefix;)_";
+                out << "}\n";
+                // MetaDL specific - end
                 out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
                 out << "rwOperation, symTable, recordTable";
@@ -2017,7 +2037,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // -- run function --
     os << "private:\nvoid runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", bool performIO = false) "
+          "std::string outputDirectory = \".\", bool performIO = false, std::string tablePrefix = \"\", std::string internalDB = \"\") "
           "{\n";
 
     os << "SignalHandler::instance()->set();\n";
@@ -2086,12 +2106,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // add methods to run with and without performing IO (mainly for the interface)
     os << "public:\nvoid run() override { runFunction(\".\", \".\", "
           "false); }\n";
-    os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\") "
+    os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\", std::string tablePrefix = \"\", std::string internalDB = \"\") "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
     }
-    os << "runFunction(inputDirectory, outputDirectory, true);\n";
+    os << "runFunction(inputDirectory, outputDirectory, true, tablePrefix, internalDB);\n";
     if (Global::config().has("live-profile")) {
         os << "if (profiler.joinable()) { profiler.join(); }\n";
     }
@@ -2124,6 +2144,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
+        // os << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
+        // os << "directiveMap[\"filename\"] == \"__internal__\") {";
+        // os << R"_(directiveMap["filename"] = internalDB;)_";
+        // os << "}\n";
+        // os << R"_(if (!tablePrefix.empty() && directiveMap["IO"] == "sqlite") { )_";
+        // os << R"_(directiveMap["name"] = tablePrefix + directiveMap["name"]; })_";
+        // os << "}\n";
         os << "RWOperation rwOperation(directiveMap);\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "rwOperation, symTable, recordTable";
@@ -2160,6 +2187,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
+        // os << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
+        // os << "directiveMap[\"filename\"] == \"__internal__\") {";
+        // os << R"_(directiveMap["filename"] = internalDB;)_";
+        // os << "}\n";
+        // os << R"_(if (!tablePrefix.empty() && directiveMap["IO"] == "sqlite") { )_";
+        // os << R"_(directiveMap["name"] = tablePrefix + directiveMap["name"]; })_";
+        // os << "}\n";
         os << "RWOperation rwOperation(directiveMap);\n";
         os << "IOSystem::getInstance().getReader(";
         os << "rwOperation, symTable, recordTable";
@@ -2333,7 +2367,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << R"_(souffle::ProfileEventSingleton::instance().makeConfigRecord("version", ")_"
            << Global::config().get("version") << R"_(");)_" << '\n';
     }
-    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir());\n";
+    os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir(), opt.getTablePrefix(), opt.getInternalDB());\n";
 
     if (Global::config().get("provenance") == "explain") {
         os << "explain(obj, false, false);\n";

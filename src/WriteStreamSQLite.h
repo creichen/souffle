@@ -32,7 +32,7 @@ public:
     WriteStreamSQLite(
             const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
             : WriteStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("filename")),
-              relationName(rwOperation.get("name")) {
+              relationName((rwOperation.has("table_prefix") ? rwOperation.get("table_prefix") : "") + rwOperation.get("name")) {
         openDB();
         createTables();
         prepareStatements();
@@ -249,7 +249,7 @@ private:
     }
 
     const std::string& dbFilename;
-    const std::string& relationName;
+    const std::string relationName;
     const std::string symbolTableName = "__SymbolTable";
 
     std::unordered_map<uint64_t, uint64_t> dbSymbolTable;

@@ -68,6 +68,16 @@ protected:
      */
     size_t num_jobs;
 
+    /**
+     * MetaDL specific: prefix of table names for sqlite I/O
+     */
+    std::string table_prefix;
+
+    /**
+     * MetaDL specific: database where internal tables are stored
+     */
+    std::string internal_db;
+
 public:
     // all argument constructor
     CmdOptions(const char* s, const char* id, const char* od, bool pe, const char* pfn, size_t nj)
@@ -108,6 +118,14 @@ public:
         return profile_name;
     }
 
+    const std::string& getTablePrefix() const {
+        return table_prefix;
+    }
+
+    const std::string& getInternalDB() const {
+        return internal_db;
+    }
+
     /**
      * get number of jobs
      */
@@ -136,6 +154,7 @@ public:
         // long options
         option longOptions[] = {{"facts", true, nullptr, 'F'}, {"output", true, nullptr, 'D'},
                 {"profile", true, nullptr, 'p'}, {"jobs", true, nullptr, 'j'}, {"index", true, nullptr, 'i'},
+                                {"tableprefix", true, nullptr, 't'}, {"internaldb", true, nullptr, 'd'},
                 // the terminal option -- needs to be null
                 {nullptr, false, nullptr, 0}};
 #pragma GCC diagnostic pop
@@ -144,7 +163,7 @@ public:
         bool ok = true;
 
         int c; /* command-line arguments processing */
-        while ((c = getopt_long(argc, argv, "D:F:hp:j:i:", longOptions, nullptr)) != EOF) {
+        while ((c = getopt_long(argc, argv, "D:F:hp:j:i:t:d:", longOptions, nullptr)) != EOF) {
             switch (c) {
                 /* Fact directories */
                 case 'F':
@@ -161,6 +180,18 @@ public:
                         ok = false;
                     }
                     out_dir = optarg;
+                    break;
+                case 't':
+                    if (*optarg)
+                        table_prefix = optarg;
+                    else
+                        table_prefix = "";
+                    break;
+                case 'd':
+                    if (*optarg)
+                        internal_db = optarg;
+                    else
+                        internal_db = "";
                     break;
                 case 'p':
                     if (!profiling) {
@@ -215,6 +246,9 @@ private:
         std::cerr << "                                    (suppress output with \"\")\n";
         std::cerr << "    -F <DIR>, --facts=<DIR>      -- Specify directory for fact files\n";
         std::cerr << "                                    (default: " << input_dir << ")\n";
+        std::cerr << "    -t <PREXIX>, --tableprefix=<PREFIX>      -- Specify the prefix for internal table names\n";
+        std::cerr << "                                    (default: \"\")\n";
+        std::cerr << "    -d <FILE>, --internaldb=<FILE> -- Specify the SQLite DB where internal tables are stored\n";
         if (profiling) {
             std::cerr << "    -p <file>, --profile=<file>  -- Specify filename for profiling\n";
             std::cerr << "                                    (default: " << profile_name << ")\n";
