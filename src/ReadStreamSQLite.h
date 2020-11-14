@@ -120,7 +120,7 @@ protected:
         std::stringstream selectSQL;
         selectSQL << "SELECT * FROM '" << relationName << "'";
         if (hasTag) {
-            selectSQL << " WHERE \"" << arity << "\" = " << tag;
+            selectSQL << " WHERE _tag = " << tag;
         }
         const char* tail = nullptr;
         if (sqlite3_prepare_v2(db, selectSQL.str().c_str(), -1, &selectStatement, &tail) != SQLITE_OK) {

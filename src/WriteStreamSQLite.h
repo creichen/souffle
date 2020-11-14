@@ -215,7 +215,7 @@ private:
             }
         }
         if (hasTag) {
-            createTableText << ",'" << arity << "' INTEGER";
+            createTableText << ",_tag INTEGER";
         }
         createTableText << ");";
         executeSQL(createTableText.str(), db);
@@ -223,7 +223,7 @@ private:
         if (hasTag) {
           std::stringstream createIndexText;
           createIndexText << "CREATE INDEX IF NOT EXISTS '" << relationName << "_index' ON '"
-                          << relationName << "'('" << arity << "')";
+                          << relationName << "'(_tag)";
           executeSQL(createIndexText.str(), db);
         }
     }
