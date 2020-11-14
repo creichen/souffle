@@ -29,10 +29,15 @@
 namespace souffle {
 
 class ReadStreamSQLite : public ReadStream {
+    bool hasTag;
+    RamDomain tag;
 public:
     ReadStreamSQLite(const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable)
-            : ReadStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("filename")),
-              relationName((rwOperation.has("table_prefix") ? rwOperation.get("table_prefix") : "") + rwOperation.get("name")) {
+            : ReadStream(rwOperation, symbolTable, recordTable),
+              hasTag(rwOperation.has("table_prefix")),
+              tag(rwOperation.has("table_prefix") ? std::stoi(rwOperation.get("table_prefix")) : -1),
+              dbFilename(rwOperation.get("filename")),
+              relationName(rwOperation.get("name")) {
         openDB();
         checkTableExists();
         prepareSelectStatement();
@@ -114,6 +119,9 @@ protected:
     void prepareSelectStatement() {
         std::stringstream selectSQL;
         selectSQL << "SELECT * FROM '" << relationName << "'";
+        if (hasTag) {
+            selectSQL << " WHERE \"" << arity << "\" = " << tag;
+        }
         const char* tail = nullptr;
         if (sqlite3_prepare_v2(db, selectSQL.str().c_str(), -1, &selectStatement, &tail) != SQLITE_OK) {
             throwError("SQLite error in sqlite3_prepare_v2: ");

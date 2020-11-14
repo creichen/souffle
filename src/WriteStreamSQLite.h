@@ -28,11 +28,17 @@
 namespace souffle {
 
 class WriteStreamSQLite : public WriteStream {
+    bool hasTag;
+    RamDomain tag;
+
 public:
     WriteStreamSQLite(
             const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("filename")),
-              relationName((rwOperation.has("table_prefix") ? rwOperation.get("table_prefix") : "") + rwOperation.get("name")) {
+      : WriteStream(rwOperation, symbolTable, recordTable),
+              hasTag(rwOperation.has("table_prefix")),
+              tag(rwOperation.has("table_prefix") ? std::stoi(rwOperation.get("table_prefix")) : -1),
+              dbFilename(rwOperation.get("filename")),
+              relationName(rwOperation.get("name")) {
         openDB();
         createTables();
         prepareStatements();
@@ -40,7 +46,7 @@ public:
     }
 
     ~WriteStreamSQLite() override {
-        executeSQL("COMMIT;", db);
+        executeSQL("END TRANSACTION;", db);
         sqlite3_finalize(insertStatement);
         sqlite3_finalize(symbolInsertStatement);
         sqlite3_finalize(symbolSelectStatement);
@@ -52,23 +58,23 @@ protected:
 
     void writeNextTuple(const RamDomain* tuple) override {
         for (size_t i = 0; i < arity; i++) {
-            RamDomain value = 0;  // Silence warning
-
             switch (typeAttributes.at(i)[0]) {
-                case 's':
-                    value = getSymbolTableID(tuple[i]);
-                    break;
-                default:
-                    value = tuple[i];
-                    break;
+            case 's': {
+                const char *str = symbolTable.unsafeResolve(tuple[i]).c_str();
+                if (sqlite3_bind_text(insertStatement, i + 1, str, -1, SQLITE_TRANSIENT) != SQLITE_OK)
+                    throwError("SQLite error in sqlite3_bind_text: ");
+                break;
             }
-
+            default: {
+                RamDomain value = tuple[i];
 #if RAM_DOMAIN_SIZE == 64
-            if (sqlite3_bind_int64(insertStatement, i + 1, value) != SQLITE_OK) {
+                if (sqlite3_bind_int64(insertStatement, i + 1, value) != SQLITE_OK)
 #else
-            if (sqlite3_bind_int(insertStatement, i + 1, value) != SQLITE_OK) {
+                if (sqlite3_bind_int(insertStatement, i + 1, value) != SQLITE_OK)
 #endif
-                throwError("SQLite error in sqlite3_bind_text: ");
+                    throwError("SQLite error in sqlite3_bind_text: ");
+                break;
+            }
             }
         }
         if (sqlite3_step(insertStatement) != SQLITE_DONE) {
@@ -149,8 +155,8 @@ private:
 
     void prepareStatements() {
         prepareInsertStatement();
-        prepareSymbolInsertStatement();
-        prepareSymbolSelectStatement();
+        // prepareSymbolInsertStatement();
+        // prepareSymbolSelectStatement();
     }
     void prepareSymbolInsertStatement() {
         std::stringstream insertSQL;
@@ -174,11 +180,16 @@ private:
 
     void prepareInsertStatement() {
         std::stringstream insertSQL;
-        insertSQL << "INSERT INTO '_" << relationName << "' VALUES ";
+        insertSQL << "INSERT INTO '" << relationName << "' VALUES ";
         insertSQL << "(@V0";
         for (unsigned int i = 1; i < arity; i++) {
             insertSQL << ",@V" << i;
         }
+
+        if (hasTag) {
+            insertSQL << "," <<  tag;
+        }
+
         insertSQL << ");";
         const char* tail = nullptr;
         if (sqlite3_prepare_v2(db, insertSQL.str().c_str(), -1, &insertStatement, &tail) != SQLITE_OK) {
@@ -188,23 +199,33 @@ private:
 
     void createTables() {
         createRelationTable();
-        createRelationView();
-        createSymbolTable();
+        //createRelationView();
+        //createSymbolTable();
     }
 
     void createRelationTable() {
         std::stringstream createTableText;
-        createTableText << "CREATE TABLE IF NOT EXISTS '_" << relationName << "' (";
+        createTableText << "CREATE TABLE IF NOT EXISTS '" << relationName << "' (";
         if (arity > 0) {
-            createTableText << "'0' INTEGER";
-            for (unsigned int i = 1; i < arity; i++) {
-                createTableText << ",'" << std::to_string(i) << "' ";
-                createTableText << "INTEGER";
+            for (unsigned int i = 0; i < arity; i++) {
+                if (i != 0)
+                    createTableText << ",";
+                const char *type = typeAttributes.at(i)[0] == 's' ? "TEXT" : "INTEGER";
+                createTableText << "'" << std::to_string(i) << "' " << type;
             }
+        }
+        if (hasTag) {
+            createTableText << ",'" << arity << "' INTEGER";
         }
         createTableText << ");";
         executeSQL(createTableText.str(), db);
-        executeSQL("DELETE FROM '_" + relationName + "';", db);
+        // executeSQL("DELETE FROM '" + relationName + "';", db);
+        if (hasTag) {
+          std::stringstream createIndexText;
+          createIndexText << "CREATE INDEX IF NOT EXISTS '" << relationName << "_index' ON '"
+                          << relationName << "'('" << arity << "')";
+          executeSQL(createIndexText.str(), db);
+        }
     }
 
     void createRelationView() {
