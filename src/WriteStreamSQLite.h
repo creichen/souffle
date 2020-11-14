@@ -36,10 +36,11 @@ public:
         openDB();
         createTables();
         prepareStatements();
-        //        executeSQL("BEGIN TRANSACTION", db);
+        executeSQL("BEGIN TRANSACTION;", db);
     }
 
     ~WriteStreamSQLite() override {
+        executeSQL("COMMIT;", db);
         sqlite3_finalize(insertStatement);
         sqlite3_finalize(symbolInsertStatement);
         sqlite3_finalize(symbolSelectStatement);
@@ -246,6 +247,11 @@ private:
         createTableText << "CREATE TABLE IF NOT EXISTS '" << symbolTableName << "' ";
         createTableText << "(id INTEGER PRIMARY KEY, symbol TEXT UNIQUE);";
         executeSQL(createTableText.str(), db);
+
+        std::stringstream createIndexText;
+        createIndexText << "CREATE INDEX IF NOT EXISTS '" << symbolTableName << "_index' ";
+        createIndexText << "ON " << symbolTableName << "(symbol);";
+        executeSQL(createIndexText.str(), db);
     }
 
     const std::string& dbFilename;
