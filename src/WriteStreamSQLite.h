@@ -219,7 +219,9 @@ private:
         }
         createTableText << ");";
         executeSQL(createTableText.str(), db);
-        // executeSQL("DELETE FROM '" + relationName + "';", db);
+        if (!hasTag) {
+          executeSQL("DELETE FROM '" + relationName + "';", db);
+        }
         if (hasTag) {
           std::stringstream createIndexText;
           createIndexText << "CREATE INDEX IF NOT EXISTS '" << relationName << "_index' ON '"
