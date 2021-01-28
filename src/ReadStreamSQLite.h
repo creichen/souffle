@@ -37,7 +37,7 @@ public:
               hasTag(rwOperation.has("table_prefix")),
               tag(rwOperation.has("table_prefix") ? std::stoi(rwOperation.get("table_prefix")) : -1),
               dbFilename(rwOperation.get("filename")),
-              relationName(rwOperation.get("name")) {
+              relationName(rwOperation.getOr("table", rwOperation.get("name"))) {
         openDB();
         checkTableExists();
         prepareSelectStatement();

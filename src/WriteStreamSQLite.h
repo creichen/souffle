@@ -29,6 +29,7 @@ namespace souffle {
 
 class WriteStreamSQLite : public WriteStream {
     bool hasTag;
+    bool append;
     RamDomain tag;
 
 public:
@@ -36,9 +37,10 @@ public:
             const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
       : WriteStream(rwOperation, symbolTable, recordTable),
               hasTag(rwOperation.has("table_prefix")),
+              append(rwOperation.getOr("mode", "") == "append"),
               tag(rwOperation.has("table_prefix") ? std::stoi(rwOperation.get("table_prefix")) : -1),
               dbFilename(rwOperation.get("filename")),
-              relationName(rwOperation.get("name")) {
+              relationName(rwOperation.getOr("table", rwOperation.get("name"))) {
         openDB();
         createTables();
         prepareStatements();
@@ -219,7 +221,8 @@ private:
         }
         createTableText << ");";
         executeSQL(createTableText.str(), db);
-        if (!hasTag) {
+        if (!hasTag && !append) {
+          // Remove entries already existing in the database
           executeSQL("DELETE FROM '" + relationName + "';", db);
         }
         if (hasTag) {
