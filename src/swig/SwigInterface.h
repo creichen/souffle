@@ -150,15 +150,15 @@ public:
     /**
      * Calls the corresponding method souffle::SouffleProgram::loadAll in SouffleInterface.h
      */
-    void loadAll(const std::string& inputDirectory) {
-        program->loadAll(inputDirectory);
+    void loadAll(const std::string& inputDirectory, const std::string& internalDB) {
+        program->loadAll(inputDirectory, internalDB);
     }
 
     /**
      * Calls the corresponding method souffle::SouffleProgram::printAll in SouffleInterface.h
      */
-    void printAll(const std::string& outputDirectory) {
-        program->printAll(outputDirectory);
+    void printAll(const std::string& outputDirectory, const std::string& internalDB) {
+        program->printAll(outputDirectory, internalDB);
     }
 
     /**

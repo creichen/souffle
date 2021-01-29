@@ -248,10 +248,10 @@ public:
     void runAll(std::string, std::string, std::string, std::string) override {}
 
     /** Load input data: not implemented */
-    void loadAll(std::string) override {}
+    void loadAll(std::string, std::string) override {}
 
     /** Print output data: not implemented */
-    void printAll(std::string) override {}
+    void printAll(std::string, std::string) override {}
 
     /** Dump inputs: not implemented */
     void dumpInputs(std::ostream&) override {}

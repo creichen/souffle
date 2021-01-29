@@ -2118,7 +2118,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";
     // issue printAll method
     os << "public:\n";
-    os << "void printAll(std::string outputDirectory = \".\") override {\n";
+    os << "void printAll(std::string outputDirectory = \".\", std::string internalDB = \"\") override {\n";
 
     // print directives as C++ initializers
     auto printDirectives = [&](const std::map<std::string, std::string>& registry) {
@@ -2144,13 +2144,11 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        // os << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
-        // os << "directiveMap[\"filename\"] == \"__internal__\") {";
-        // os << R"_(directiveMap["filename"] = internalDB;)_";
-        // os << "}\n";
-        // os << R"_(if (!tablePrefix.empty() && directiveMap["IO"] == "sqlite") { )_";
-        // os << R"_(directiveMap["name"] = tablePrefix + directiveMap["name"]; })_";
-        // os << "}\n";
+        os << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
+        os << "directiveMap[\"dbname\"] == \"__internal__\") {";
+        os << R"_(directiveMap["dbname"] = internalDB;)_";
+        os << R"_(directiveMap["filename"] = internalDB;)_";
+        os << "}\n";
         os << "RWOperation rwOperation(directiveMap);\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "rwOperation, symTable, recordTable";
@@ -2176,7 +2174,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
     // issue loadAll method
     os << "public:\n";
-    os << "void loadAll(std::string inputDirectory = \".\") override {\n";
+    os << "void loadAll(std::string inputDirectory = \".\", std::string internalDB = \"\") override {\n";
 
     for (auto load : loadIOs) {
         os << "try {";
@@ -2187,10 +2185,11 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        // os << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
-        // os << "directiveMap[\"filename\"] == \"__internal__\") {";
-        // os << R"_(directiveMap["filename"] = internalDB;)_";
-        // os << "}\n";
+        os << R"_(if (!internalDB.empty() && directiveMap["IO"] == "sqlite" && )_";
+        os << "directiveMap[\"dbname\"] == \"__internal__\") {";
+        os << R"_(directiveMap["filename"] = internalDB;)_";
+        os << R"_(directiveMap["dbname"] = internalDB;)_";
+        os << "}\n";
         // os << R"_(if (!tablePrefix.empty() && directiveMap["IO"] == "sqlite") { )_";
         // os << R"_(directiveMap["name"] = tablePrefix + directiveMap["name"]; })_";
         // os << "}\n";
