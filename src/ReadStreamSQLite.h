@@ -113,7 +113,7 @@ protected:
     void throwError(const std::string& message) {
         std::stringstream error;
         error << message << sqlite3_errmsg(db) << "\n";
-        throw std::invalid_argument(error.str());
+        // throw std::invalid_argument(error.str());
     }
 
     void prepareSelectStatement() {
@@ -156,8 +156,8 @@ protected:
             }
         }
         sqlite3_finalize(tableStatement);
-        throw std::invalid_argument(
-                "Required table or view does not exist in " + dbFilename + " for relation " + relationName);
+
+        std::cerr << "Required table or view does not exist in " + dbFilename + " for relation " + relationName;
     }
     const std::string& dbFilename;
     const std::string relationName;

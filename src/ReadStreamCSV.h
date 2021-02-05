@@ -234,7 +234,8 @@ public:
               fileHandle(getFileName(rwOperation), std::ios::in | std::ios::binary) {
         if (!rwOperation.has("intermediate")) {
             if (!fileHandle.is_open()) {
-                throw std::invalid_argument("Cannot open fact file " + baseName + "\n");
+              std::cerr << "Cannot open fact file " + baseName + "\n";
+              return;
             }
             // Strip headers if we're using them
             if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
