@@ -67,7 +67,7 @@ protected:
             std::string element(reinterpret_cast<const char*>(sqlite3_column_text(selectStatement, column)));
 
             if (element.empty()) {
-                element = "n/a";
+                element = "";
             }
 
             try {
