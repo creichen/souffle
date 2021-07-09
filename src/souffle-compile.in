@@ -49,7 +49,7 @@ set -e
 CXX="$(printenv CXX || true)"
 test -z "$CXX" && CXX="@CXX@"
 CPPFLAGS="$(printenv CPPFLAGS || true) @CPPFLAGS@"
-CXXFLAGS="$(printenv CXXFLAGS || true) @SOUFFLE_CXXFLAGS@ -march=native"
+CXXFLAGS="$(printenv CXXFLAGS || true) @SOUFFLE_CXXFLAGS@ -mtune=native"
 LDFLAGS="$(printenv LDFLAGS || true) @LDFLAGS@"
 LIBS="$(printenv LIBS || true) @LIBS@"
 
