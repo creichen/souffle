@@ -298,7 +298,7 @@ protected:
 
     /** add functor */
     void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f) {
-        assert(getFunctorDeclaration(*this, f->getName()) == nullptr && "Redefinition of functor!");
+//        assert(getFunctorDeclaration(*this, f->getName()) == nullptr && "Redefinition of functor!");
         functors.push_back(std::move(f));
     }
 
