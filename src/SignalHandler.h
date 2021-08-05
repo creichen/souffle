@@ -24,6 +24,8 @@
 #include <mutex>
 #include <string>
 
+//#define SOUFFLE_ALLOW_SIGNALS
+
 namespace souffle {
 
 /**
@@ -73,6 +75,7 @@ public:
      * set signal handlers
      */
     void set() {
+#ifdef SOUFFLE_ALLOW_SIGNALS
         if (!isSet && std::getenv("SOUFFLE_ALLOW_SIGNALS") == nullptr) {
             // register signals
             // floating point exception
@@ -92,6 +95,7 @@ public:
             }
             isSet = true;
         }
+#endif
     }
 
     /***
