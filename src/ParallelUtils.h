@@ -28,7 +28,7 @@
 #include <omp.h>
 
 #ifdef __APPLE__
-#define pthread_yield pthread_yield_np
+#define sched_yield pthread_yield_np
 #endif
 
 // support for a parallel region
@@ -175,7 +175,7 @@ public:
         ++i;
         if ((i % 1000) == 0) {
             // there was no progress => let others work
-            pthread_yield();
+            sched_yield();
         } else {
             // relax this CPU
             cpu_relax();
